@@ -7,7 +7,7 @@
 int main() {
     std::cout << "Dungeon Server starting..." << std::endl;
 
-    dungeonGame::protocol::Enemy enemy;
+    dungeon_game::protocol::Enemy enemy;
     enemy.set_type("Goblin");
     enemy.set_health(100);
 
