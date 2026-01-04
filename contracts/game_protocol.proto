@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package dungeonGame.protocol;
+package dungeon_game.protocol;
 
 message DungeonRoom {
   int32 room_id = 1;
