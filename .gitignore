@@ -1,0 +1,14 @@
+.idea/
+.vs/
+*.user
+.vscode
+
+.DS_Store
+Thumbs.db
+
+# Build Folders
+bin/
+obj/
+cmake-build-*/
+out/
+vcpkg_installed/
