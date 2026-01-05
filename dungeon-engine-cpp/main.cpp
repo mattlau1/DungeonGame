@@ -1,16 +1,31 @@
 #include "main.h"
-
-#include <iostream>
+#include "raylib.h"
 #include "game_protocol.pb.h"
 #include "game_protocol.grpc.pb.h"
+#include "grpcpp/create_channel.h"
+#include "src/DungeonClient.h"
 
 int main() {
-    std::cout << "Dungeon Server starting..." << std::endl;
+    // TODO: change default window size
+    constexpr int screenWidth = 1280;
+    constexpr int screenHeight = 1280;
 
-    dungeon_game::protocol::Enemy enemy;
-    enemy.set_type("Goblin");
-    enemy.set_health(100);
+    InitWindow(screenWidth, screenHeight, "DungeonGame");
 
-    std::cout << "Spawned a " << enemy.type() << " with " << enemy.health() << " HP." << std::endl;
+    auto const serverAddress = "localhost:5142";
+    auto const channel = grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials());
+    DungeonGame::DungeonClient dungeonClient{channel};
+
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+
+        ClearBackground(BLACK);
+        DrawFPS(0, 0);
+
+        EndDrawing();
+    }
+
+    CloseWindow();
+
     return 0;
 }
