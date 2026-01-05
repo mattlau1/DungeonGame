@@ -5,6 +5,15 @@ project(DungeonEngine CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Use LLD if available
+if(UNIX AND NOT APPLE)
+    find_program(LLD_PATH NAMES lld)
+    if(LLD_PATH)
+        add_link_options("-fuse-ld=lld")
+        message(STATUS "Linker: Using LLD")
+    endif()
+endif()
+
 set(VCPKG_PREFER_SYSTEM_LIBS OFF)
 
 # Dependencies
@@ -41,4 +50,12 @@ target_link_libraries(dungeon_engine
         PRIVATE
         gRPC::grpc++
         protobuf::libprotobuf
+
+# Precompiled Headers
+target_precompile_headers(dungeon_engine PRIVATE
+        <grpcpp/grpcpp.h>
+        <memory>
+        <iostream>
+        <string>
+        <vector>
 )
