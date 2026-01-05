@@ -23,7 +23,11 @@ find_package(raylib CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 
 # Executable
-add_executable(dungeon_engine main.cpp)
+add_executable(dungeon_engine
+        main.cpp
+        src/DungeonClient.cpp
+        src/DungeonClient.h
+)
 
 # Protobuf and gRPC setup
 set(PROTO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../contracts")
