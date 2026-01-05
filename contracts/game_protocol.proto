@@ -25,7 +25,7 @@ message Item {
 }
 
 service DungeonArchitect {
-  rpc GetNextRoom (RoomRequest) returns (DungeonRoom);
+  rpc GenerateRoom (RoomRequest) returns (DungeonRoom);
 }
 
 message RoomRequest {

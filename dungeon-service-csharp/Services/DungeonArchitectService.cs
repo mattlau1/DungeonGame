@@ -5,7 +5,7 @@ namespace DungeonService.Services;
 
 public class DungeonArchitectService(ILogger<DungeonArchitectService> logger) : DungeonArchitect.DungeonArchitectBase
 {
-    public override Task<DungeonRoom> GetNextRoom(RoomRequest request, ServerCallContext context)
+    public override Task<DungeonRoom> GenerateRoom(RoomRequest request, ServerCallContext context)
     {
         logger.LogInformation("Generating room for Seed: {Seed}, Floor: {Floor}", request.Seed, request.FloorLevel);
 
