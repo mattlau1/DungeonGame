@@ -1,17 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Protobuf Include="../contracts/game_protocol.proto" GrpcServices="Server" Link="Protos/game_protocol.proto" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <PackageReference Include="Grpc.AspNetCore" Version="2.57.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Grpc.AspNetCore" Version="2.57.0"/>
+    </ItemGroup>
 
+    <ItemGroup>
+        <Protobuf Include="../contracts/**/*.proto"
+                  GrpcServices="Server"
+                  ProtoRoot="../contracts">
+            <Link>Protos/%(RecursiveDir)%(Filename)%(Extension)</Link>
+        </Protobuf>
+    </ItemGroup>
 </Project>
