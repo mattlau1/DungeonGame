@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package dungeon_game.shared;
+
+message Location {
+  // Room-local position in world units
+  float x = 2;
+  float y = 3;
+}
+

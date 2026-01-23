@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package dungeon_game.dungeon;
+
+import "Shared/shared_types.proto";
+
+service RoomController {
+  rpc SubscribeRoom (SubscribeRoomRequest) returns (stream RoomSnapshot);
+}
+
+message SubscribeRoomRequest {
+  int32 player_id = 1;
+  int32 room_id = 2;
+}
+
+message RoomSnapshot {
+  int32 room_id = 1;
+  uint64 server_tick = 2;
+  repeated PlayerState players = 3;
+}
+
+message PlayerState {
+  int32 player_id = 1;
+  dungeon_game.shared.Location location = 2;
+}
