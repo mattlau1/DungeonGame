@@ -1,10 +1,14 @@
 
+using DungeonGame.Application.Abstractions.Dungeon;
+using DungeonGame.Application.Dungeon;
 using DungeonService.Services.Core;
 using DungeonService.Services.Dungeon;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGrpc();
+
+builder.Services.AddScoped<IDungeonArchitect, DungeonArchitect>();
 
 var app = builder.Build();
 

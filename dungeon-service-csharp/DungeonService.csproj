@@ -17,4 +17,8 @@
             <Link>Protos/%(RecursiveDir)%(Filename)%(Extension)</Link>
         </Protobuf>
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DungeonGame.Application\DungeonGame.Application.csproj" />
+    </ItemGroup>
 </Project>

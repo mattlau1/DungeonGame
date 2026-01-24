@@ -12,3 +12,6 @@ obj/
 cmake-build-*/
 out/
 vcpkg_installed/
+
+# symlink
+dungeon-engine-cpp/contracts
