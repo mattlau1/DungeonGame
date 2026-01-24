@@ -2,7 +2,7 @@ namespace DungeonServer.Application.Dungeon.Room;
 
 public interface IRoomStore
 {
-    Task<int> CreateRoomAsync(RoomState room, CancellationToken ct);
+    Task<RoomStateSnapshot> CreateRoomAsync(RoomState room, CancellationToken ct);
 
     Task<RoomStateSnapshot> UpdateRoomAsync(int roomId, Action<RoomState> updateAction, CancellationToken ct);
 
