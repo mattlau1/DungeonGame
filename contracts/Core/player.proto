@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-import "Shared/shared_types.proto";
+package dungeon_game.core;
 
-package dungeon_game.player;
+import "Shared/shared_types.proto";
 
 service PlayerController {
   rpc SpawnPlayer (SpawnRequest) returns (PlayerInfo);

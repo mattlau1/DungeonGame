@@ -1,4 +1,5 @@
 syntax = "proto3";
+
 package dungeon_game.dungeon;
 
 enum RoomType {
