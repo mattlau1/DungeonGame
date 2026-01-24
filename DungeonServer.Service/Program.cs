@@ -1,6 +1,7 @@
 using DungeonServer.Application.Abstractions.Dungeon;
 using DungeonServer.Application.Dungeon;
-using DungeonServer.Application.Dungeon.Room;
+using DungeonServer.Application.Dungeon.Rooms;
+using DungeonServer.Application.Dungeon.Rooms.Storage;
 using DungeonServer.Service.Services.Core;
 using DungeonServer.Service.Services.Dungeon;
 

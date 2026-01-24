@@ -1,4 +1,4 @@
-namespace DungeonServer.Application.Dungeon.Room;
+namespace DungeonServer.Application.Dungeon.Rooms.Models;
 
 public static class RoomConstants
 {
