@@ -1,7 +1,7 @@
 using DungeonGame.Dungeon;
 using Grpc.Core;
 
-namespace DungeonService.Services.Dungeon;
+namespace DungeonServer.Service.Services.Dungeon;
 
 public class RoomControllerService : RoomController.RoomControllerBase
 {

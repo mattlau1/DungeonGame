@@ -1,7 +1,7 @@
 using DungeonGame.Core;
 using Grpc.Core;
 
-namespace DungeonService.Services.Core;
+namespace DungeonServer.Service.Services.Core;
 
 public class MovementControllerService : MovementController.MovementControllerBase
 {

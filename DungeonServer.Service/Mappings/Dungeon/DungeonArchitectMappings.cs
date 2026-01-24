@@ -3,7 +3,7 @@ using DungeonGame.Dungeon;
 using ApplicationRoomType = DungeonGame.Application.Dungeon.GenerateRoom.RoomType;
 using GrpcRoomType = DungeonGame.Dungeon.RoomType;
 
-namespace DungeonService.Mappings.Dungeon;
+namespace DungeonServer.Service.Mappings.Dungeon;
 
 public static class DungeonArchitectMappings
 {

@@ -1,10 +1,10 @@
 using DungeonGame.Application.Abstractions.Dungeon;
 using DungeonGame.Application.Dungeon.GenerateRoom;
 using DungeonGame.Dungeon;
-using DungeonService.Mappings.Dungeon;
+using DungeonServer.Service.Mappings.Dungeon;
 using Grpc.Core;
 
-namespace DungeonService.Services.Dungeon;
+namespace DungeonServer.Service.Services.Dungeon;
 
 public class DungeonArchitectService : DungeonArchitect.DungeonArchitectBase
 {

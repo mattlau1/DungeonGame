@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DungeonService", "dungeon-service-csharp\DungeonService.csproj", "{DD898D83-B27E-46FC-984E-A717395CB0F6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DungeonServer.Service", "DungeonServer.Service\DungeonServer.Service.csproj", "{DD898D83-B27E-46FC-984E-A717395CB0F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DungeonGame.Application", "DungeonGame.Application\DungeonGame.Application.csproj", "{82F104E8-E94F-4717-B683-3B4B62E0FE5C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DungeonServer.Application", "DungeonServer.Application\DungeonServer.Application.csproj", "{82F104E8-E94F-4717-B683-3B4B62E0FE5C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
