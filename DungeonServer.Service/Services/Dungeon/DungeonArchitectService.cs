@@ -1,8 +1,9 @@
 using DungeonGame.Dungeon;
 using DungeonServer.Application.Abstractions.Dungeon;
-using DungeonServer.Application.Dungeon.GenerateRoom;
+using DungeonServer.Application.Dungeon.Room;
 using DungeonServer.Service.Mappings.Dungeon;
 using Grpc.Core;
+using DungeonArchitect = DungeonGame.Dungeon.DungeonArchitect;
 
 namespace DungeonServer.Service.Services.Dungeon;
 

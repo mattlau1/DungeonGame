@@ -1,6 +1,6 @@
 using DungeonGame.Dungeon;
-using DungeonServer.Application.Dungeon.GenerateRoom;
-using ApplicationRoomType = DungeonServer.Application.Dungeon.GenerateRoom.RoomType;
+using DungeonServer.Application.Dungeon.Room;
+using ApplicationRoomType = DungeonServer.Application.Dungeon.Room.RoomType;
 using GrpcRoomType = DungeonGame.Dungeon.RoomType;
 
 namespace DungeonServer.Service.Mappings.Dungeon;
@@ -11,10 +11,10 @@ public static class DungeonArchitectMappings
     {
         return new DungeonRoom
         {
-            RoomId = result.RoomId,
-            RoomType = result.RoomType.ToGrpcRoomType(),
-            Width = result.Width,
-            Height = result.Height
+            RoomId = result.RoomStateSnapshot.RoomId,
+            RoomType = result.RoomStateSnapshot.RoomType.ToGrpcRoomType(),
+            Width = result.RoomStateSnapshot.Width,
+            Height = result.RoomStateSnapshot.Height
         };
     }
 

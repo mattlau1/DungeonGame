@@ -1,4 +1,4 @@
-using DungeonServer.Application.Dungeon.GenerateRoom;
+using DungeonServer.Application.Dungeon.Room;
 
 namespace DungeonServer.Application.Abstractions.Dungeon;
 
