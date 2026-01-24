@@ -46,7 +46,7 @@ public class InMemoryRoomStore : IRoomStore
     {
         ct.ThrowIfCancellationRequested();
 
-        if (!_roomStates.TryGetValue(roomId, out var room))
+        if (!_roomStates.TryGetValue(roomId, out LockableRoomState? room))
         {
             throw new KeyNotFoundException($"Room Id {roomId} does not exist.");
         }
