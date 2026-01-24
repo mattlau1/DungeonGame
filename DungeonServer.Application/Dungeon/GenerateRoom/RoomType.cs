@@ -1,4 +1,4 @@
-namespace DungeonGame.Application.Dungeon.GenerateRoom;
+namespace DungeonServer.Application.Dungeon.GenerateRoom;
 
 public enum RoomType
 {

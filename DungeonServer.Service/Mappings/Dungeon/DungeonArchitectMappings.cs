@@ -1,6 +1,6 @@
-using DungeonGame.Application.Dungeon.GenerateRoom;
 using DungeonGame.Dungeon;
-using ApplicationRoomType = DungeonGame.Application.Dungeon.GenerateRoom.RoomType;
+using DungeonServer.Application.Dungeon.GenerateRoom;
+using ApplicationRoomType = DungeonServer.Application.Dungeon.GenerateRoom.RoomType;
 using GrpcRoomType = DungeonGame.Dungeon.RoomType;
 
 namespace DungeonServer.Service.Mappings.Dungeon;

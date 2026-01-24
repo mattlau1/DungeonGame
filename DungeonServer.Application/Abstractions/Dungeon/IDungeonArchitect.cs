@@ -1,6 +1,6 @@
-using DungeonGame.Application.Dungeon.GenerateRoom;
+using DungeonServer.Application.Dungeon.GenerateRoom;
 
-namespace DungeonGame.Application.Abstractions.Dungeon;
+namespace DungeonServer.Application.Abstractions.Dungeon;
 
 public interface IDungeonArchitect
 {

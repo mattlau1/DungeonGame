@@ -1,8 +1,7 @@
-using DungeonGame.Application.Abstractions;
-using DungeonGame.Application.Abstractions.Dungeon;
-using DungeonGame.Application.Dungeon.GenerateRoom;
+using DungeonServer.Application.Abstractions.Dungeon;
+using DungeonServer.Application.Dungeon.GenerateRoom;
 
-namespace DungeonGame.Application.Dungeon;
+namespace DungeonServer.Application.Dungeon;
 
 public class DungeonArchitect : IDungeonArchitect
 {

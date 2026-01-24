@@ -1,3 +1,3 @@
-namespace DungeonGame.Application.Dungeon.GenerateRoom;
+namespace DungeonServer.Application.Dungeon.GenerateRoom;
 
 public record GenerateRoomRequest();

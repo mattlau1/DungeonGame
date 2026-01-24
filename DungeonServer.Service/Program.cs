@@ -1,6 +1,5 @@
-
-using DungeonGame.Application.Abstractions.Dungeon;
-using DungeonGame.Application.Dungeon;
+using DungeonServer.Application.Abstractions.Dungeon;
+using DungeonServer.Application.Dungeon;
 using DungeonServer.Service.Services.Core;
 using DungeonServer.Service.Services.Dungeon;
 
