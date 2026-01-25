@@ -24,11 +24,10 @@ public class DungeonArchitect : IDungeonArchitect
     private static RoomState GenerateNewRoom()
     {
         return new RoomState
-        {
-            Height = Random.Shared.Next(RoomConstants.MinRoomSize, RoomConstants.MaxRoomSize),
-            Width = Random.Shared.Next(RoomConstants.MinRoomSize, RoomConstants.MaxRoomSize),
-            RoomId = 0,
-            RoomType = RoomType.Combat // TODO: Implement algorithm to pick this
-        };
+        (
+            RoomType.Combat, // TODO: Implement algorithm to pick this
+            Random.Shared.Next(RoomConstants.MinRoomSize, RoomConstants.MaxRoomSize),
+            Random.Shared.Next(RoomConstants.MinRoomSize, RoomConstants.MaxRoomSize)
+        );
     }
 }

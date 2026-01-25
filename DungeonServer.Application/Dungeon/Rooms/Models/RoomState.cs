@@ -8,4 +8,13 @@ public class RoomState
     public int Height { get; set; }
 
     // TODO: Add Players, Monsters etc.
+
+    public RoomState(RoomType roomType, int width, int height)
+    {
+        RoomId = 0;
+        RoomType = roomType;
+        Width = width;
+        Height = height;
+    }
+    
 }
