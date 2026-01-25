@@ -1,5 +1,5 @@
 using DungeonGame.Core;
-using DungeonServer.Application.Core.PlayerController.Contracts;
+using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Service.Mappings.Shared;
 
 namespace DungeonServer.Service.Mappings.Core;

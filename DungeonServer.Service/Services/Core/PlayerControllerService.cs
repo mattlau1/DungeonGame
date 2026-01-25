@@ -1,6 +1,6 @@
 using DungeonGame.Core;
 using DungeonServer.Application.Abstractions.Dungeon;
-using DungeonServer.Application.Core.PlayerController.Contracts;
+using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Service.Mappings.Core;
 using Grpc.Core;
 

@@ -1,5 +1,3 @@
-using DungeonServer.Application.Core.PlayerController.Models;
-
 namespace DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
 
 /// <summary>

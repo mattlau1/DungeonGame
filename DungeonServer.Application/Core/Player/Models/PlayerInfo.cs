@@ -1,6 +1,6 @@
 using DungeonServer.Application.Core.Shared;
 
-namespace DungeonServer.Application.Core.PlayerController.Models;
+namespace DungeonServer.Application.Core.Player.Models;
 
 public record PlayerInfo
 {

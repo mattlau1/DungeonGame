@@ -1,4 +1,4 @@
-using DungeonServer.Application.Core.PlayerController.Contracts;
+using DungeonServer.Application.Core.Player.Contracts;
 
 namespace DungeonServer.Application.Abstractions.Dungeon;
 

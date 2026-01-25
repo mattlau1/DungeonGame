@@ -1,5 +1,5 @@
 using DungeonServer.Application.Abstractions.Dungeon;
-using DungeonServer.Application.Core.PlayerController.Storage;
+using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Dungeon;
 using DungeonServer.Application.Dungeon.DungeonArchitect;
 using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
