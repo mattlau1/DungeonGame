@@ -10,9 +10,9 @@ public static class PlayerControllerMappings
     {
         return new PlayerInfo
         {
-            Id = result.Id,
             RoomId = result.RoomId,
-            Location = result.Location.ToGrpcLocation()
+            Id = result.PlayerInfo.Id,
+            Location = result.PlayerInfo.Location.ToGrpcLocation()
         };
     }
 }

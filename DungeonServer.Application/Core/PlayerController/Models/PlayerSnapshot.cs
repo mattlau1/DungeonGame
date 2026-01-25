@@ -1,0 +1,14 @@
+using DungeonServer.Application.Core.Shared;
+
+namespace DungeonServer.Application.Core.PlayerController.Models;
+
+/// <summary>
+/// Immutable view of a player's current state.
+/// </summary>
+public sealed record PlayerSnapshot(int PlayerId, Location Location)
+{
+    public static PlayerSnapshot From(PlayerInfo playerInfo)
+    {
+        return new PlayerSnapshot(playerInfo.Id, playerInfo.Location);
+    }
+}

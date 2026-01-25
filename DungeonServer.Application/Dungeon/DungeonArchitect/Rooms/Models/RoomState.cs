@@ -3,12 +3,15 @@ namespace DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
 public class RoomState
 {
     public int RoomId { get; set; }
+
     public RoomType RoomType { get; set; }
+
     public int Width { get; set; }
+
     public int Height { get; set; }
 
-    // TODO: Add Players, Monsters etc.
-
+    public HashSet<int> PlayerIds { get; set; } = [];
+    
     public RoomState(RoomType roomType, int width, int height)
     {
         RoomId = 0;
@@ -16,5 +19,4 @@ public class RoomState
         Width = width;
         Height = height;
     }
-    
 }

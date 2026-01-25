@@ -1,3 +1,5 @@
+using DungeonServer.Application.Core.PlayerController.Models;
+
 namespace DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
 
 /// <summary>
@@ -6,9 +8,13 @@ namespace DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
 public sealed record RoomStateSnapshot
 {
     public int RoomId { get; init; }
+
     public RoomType RoomType { get; init; }
+
     public int Width { get; init; }
+
     public int Height { get; init; }
+
 
     public RoomStateSnapshot(int roomId, RoomType roomType, int width, int height)
     {
