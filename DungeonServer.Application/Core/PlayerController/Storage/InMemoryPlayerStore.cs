@@ -27,7 +27,7 @@ public class InMemoryPlayerStore : IPlayerStore
         ct.ThrowIfCancellationRequested();
 
         int playerId = Interlocked.Increment(ref _nextPlayerId);
-        var info = new PlayerInfo { Id = playerId, Location = initialLocation };
+        var info = new PlayerInfo { Id = playerId, RoomId = 0, Location = initialLocation };
         var entry = new LockablePlayerState(playerId, info);
 
         if (!_players.TryAdd(playerId, entry))

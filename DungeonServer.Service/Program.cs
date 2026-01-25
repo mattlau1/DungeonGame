@@ -1,7 +1,9 @@
 using DungeonServer.Application.Abstractions.Dungeon;
+using DungeonServer.Application.Core.PlayerController.Storage;
 using DungeonServer.Application.Dungeon;
 using DungeonServer.Application.Dungeon.DungeonArchitect;
 using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
+using DungeonServer.Application.Dungeon.DungeonController;
 using DungeonServer.Service.Services.Core;
 using DungeonServer.Service.Services.Dungeon;
 
@@ -10,7 +12,10 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGrpc();
 
 builder.Services.AddSingleton<IRoomStore, InMemoryRoomStore>();
+builder.Services.AddSingleton<IPlayerStore, InMemoryPlayerStore>();
+
 builder.Services.AddScoped<IDungeonArchitect, DungeonArchitect>();
+builder.Services.AddScoped<IDungeonController, DungeonController>();
 
 WebApplication app = builder.Build();
 

@@ -1,25 +1,29 @@
 using DungeonGame.Core;
-using DungeonServer.Application.Abstractions.Core;
+using DungeonServer.Application.Abstractions.Dungeon;
+using DungeonServer.Application.Core.PlayerController.Contracts;
+using DungeonServer.Service.Mappings.Core;
 using Grpc.Core;
 
 namespace DungeonServer.Service.Services.Core;
 
 public class PlayerControllerService : PlayerController.PlayerControllerBase
 {
-    private IPlayerController _playerController;
+    private readonly IDungeonController _dungeonController;
 
-    public PlayerControllerService(IPlayerController playerController)
+    public PlayerControllerService(IDungeonController dungeonController)
     {
-        _playerController = playerController;
+        _dungeonController = dungeonController;
     }
 
-    public override Task<PlayerInfo> SpawnPlayer(SpawnRequest request, ServerCallContext context)
+    public override async Task<PlayerInfo> SpawnPlayer(SpawnRequest request, ServerCallContext context)
     {
-        return base.SpawnPlayer(request, context);
+        PlayerInfoResult result = await _dungeonController.SpawnPlayerAsync(context.CancellationToken);
+        return result.ToGrpcPlayerInfo();
     }
 
-    public override Task<PlayerInfo> GetPlayerInfo(PlayerInfoRequest request, ServerCallContext context)
+    public override async Task<PlayerInfo> GetPlayerInfo(PlayerInfoRequest request, ServerCallContext context)
     {
-        return base.GetPlayerInfo(request, context);
+        PlayerInfoResult result = await _dungeonController.GetPlayerInfoAsync(request.PlayerId, context.CancellationToken);
+        return result.ToGrpcPlayerInfo();
     }
 }
