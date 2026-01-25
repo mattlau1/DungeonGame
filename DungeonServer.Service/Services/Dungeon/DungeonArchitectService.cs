@@ -1,6 +1,6 @@
 using DungeonGame.Dungeon;
 using DungeonServer.Application.Abstractions.Dungeon;
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Contracts;
+using DungeonServer.Application.Core.Rooms.Contracts;
 using DungeonServer.Service.Mappings.Dungeon;
 using Grpc.Core;
 using DungeonArchitect = DungeonGame.Dungeon.DungeonArchitect;

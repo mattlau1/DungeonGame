@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
+using DungeonServer.Application.Core.Rooms.Models;
 
-namespace DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
+namespace DungeonServer.Application.Core.Rooms.Storage;
 
 public class InMemoryRoomStore : IRoomStore
 {

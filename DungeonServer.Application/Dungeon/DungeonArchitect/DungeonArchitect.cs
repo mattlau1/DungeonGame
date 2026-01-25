@@ -1,7 +1,7 @@
 using DungeonServer.Application.Abstractions.Dungeon;
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Contracts;
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
+using DungeonServer.Application.Core.Rooms.Contracts;
+using DungeonServer.Application.Core.Rooms.Models;
+using DungeonServer.Application.Core.Rooms.Storage;
 
 namespace DungeonServer.Application.Dungeon.DungeonArchitect;
 

@@ -1,4 +1,4 @@
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Contracts;
+using DungeonServer.Application.Core.Rooms.Contracts;
 
 namespace DungeonServer.Application.Abstractions.Dungeon;
 

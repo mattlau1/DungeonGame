@@ -2,9 +2,9 @@ using DungeonServer.Application.Abstractions.Dungeon;
 using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Player.Storage;
+using DungeonServer.Application.Core.Rooms.Contracts;
+using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Contracts;
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
 
 namespace DungeonServer.Application.Dungeon.DungeonController;
 
