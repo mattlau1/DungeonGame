@@ -1,4 +1,4 @@
-namespace DungeonServer.Application.Dungeon.Rooms.Models;
+namespace DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
 
 /// <summary>
 /// Similar to RoomState but as an immutable record.

@@ -1,5 +1,5 @@
-﻿using DungeonServer.Application.Dungeon.Rooms.Models;
-using DungeonServer.Application.Dungeon.Rooms.Storage;
+﻿using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
+using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
 using Xunit;
 
 namespace DungeonServer.Application.Tests.Rooms.Storage;

@@ -1,6 +1,6 @@
 using DungeonGame.Dungeon;
-using DungeonServer.Application.Dungeon.Rooms.Contracts;
-using ApplicationRoomType = DungeonServer.Application.Dungeon.Rooms.Models.RoomType;
+using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Contracts;
+using ApplicationRoomType = DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models.RoomType;
 using GrpcRoomType = DungeonGame.Dungeon.RoomType;
 
 namespace DungeonServer.Service.Mappings.Dungeon;

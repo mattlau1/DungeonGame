@@ -1,4 +1,4 @@
-namespace DungeonServer.Application.Dungeon.Rooms.Models;
+namespace DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
 
 public enum RoomType
 {

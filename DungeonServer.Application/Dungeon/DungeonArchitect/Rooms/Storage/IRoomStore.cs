@@ -1,6 +1,6 @@
-using DungeonServer.Application.Dungeon.Rooms.Models;
+using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
 
-namespace DungeonServer.Application.Dungeon.Rooms.Storage;
+namespace DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
 
 public interface IRoomStore
 {

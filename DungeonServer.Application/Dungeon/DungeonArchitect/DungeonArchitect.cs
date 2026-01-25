@@ -1,9 +1,9 @@
 using DungeonServer.Application.Abstractions.Dungeon;
-using DungeonServer.Application.Dungeon.Rooms.Contracts;
-using DungeonServer.Application.Dungeon.Rooms.Models;
-using DungeonServer.Application.Dungeon.Rooms.Storage;
+using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Contracts;
+using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
+using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
 
-namespace DungeonServer.Application.Dungeon;
+namespace DungeonServer.Application.Dungeon.DungeonArchitect;
 
 public class DungeonArchitect : IDungeonArchitect
 {
