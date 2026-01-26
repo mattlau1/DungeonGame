@@ -4,10 +4,6 @@ package dungeon_game.core;
 
 import "Shared/shared_types.proto";
 
-service MovementController {
-  rpc SetMovementInput (SetMovementInputRequest) returns (SetMovementInputResponse);
-}
-
 message SetMovementInputRequest {
   int32 player_id = 1;
 
@@ -29,4 +25,3 @@ enum InputResult {
   INPUT_RESULT_INVALID_PLAYER = 2;
   INPUT_RESULT_INVALID_ROOM = 3;
 }
-

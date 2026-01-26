@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package dungeon_game.core;
+
+import "Core/movement.proto";
+import "Core/player.proto";
+
+service DungeonController {
+  rpc SetMovementInput (SetMovementInputRequest) returns (SetMovementInputResponse);
+  rpc SpawnPlayer (SpawnRequest) returns (PlayerInfo);
+  rpc GetPlayerInfo (PlayerInfoRequest) returns (PlayerInfo);
+}

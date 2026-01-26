@@ -6,13 +6,19 @@ using Grpc.Core;
 
 namespace DungeonServer.Service.Services.Core;
 
-public class PlayerControllerService : PlayerController.PlayerControllerBase
+public class DungeonControllerService : DungeonController.DungeonControllerBase
 {
     private readonly IDungeonController _dungeonController;
-
-    public PlayerControllerService(IDungeonController dungeonController)
+    public DungeonControllerService(IDungeonController dungeonController)
     {
         _dungeonController = dungeonController;
+    }
+
+    public override Task<SetMovementInputResponse> SetMovementInput(
+        SetMovementInputRequest request,
+        ServerCallContext context)
+    {
+        return base.SetMovementInput(request, context);
     }
 
     public override async Task<PlayerInfo> SpawnPlayer(SpawnRequest request, ServerCallContext context)
@@ -23,7 +29,8 @@ public class PlayerControllerService : PlayerController.PlayerControllerBase
 
     public override async Task<PlayerInfo> GetPlayerInfo(PlayerInfoRequest request, ServerCallContext context)
     {
-        PlayerInfoResult result = await _dungeonController.GetPlayerInfoAsync(request.PlayerId, context.CancellationToken);
+        PlayerInfoResult result =
+            await _dungeonController.GetPlayerInfoAsync(request.PlayerId, context.CancellationToken);
         return result.ToGrpcPlayerInfo();
     }
 }

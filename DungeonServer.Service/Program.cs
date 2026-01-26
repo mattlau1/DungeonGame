@@ -1,7 +1,6 @@
 using DungeonServer.Application.Abstractions.Dungeon;
 using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Storage;
-using DungeonServer.Application.Dungeon;
 using DungeonServer.Application.Dungeon.DungeonArchitect;
 using DungeonServer.Application.Dungeon.DungeonController;
 using DungeonServer.Service.Services.Core;
@@ -19,8 +18,7 @@ builder.Services.AddScoped<IDungeonController, DungeonController>();
 
 WebApplication app = builder.Build();
 
-app.MapGrpcService<MovementControllerService>();
-app.MapGrpcService<PlayerControllerService>();
+app.MapGrpcService<DungeonControllerService>();
 app.MapGrpcService<DungeonArchitectService>();
 app.MapGrpcService<RoomControllerService>();
 
