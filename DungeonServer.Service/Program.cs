@@ -1,4 +1,6 @@
+using DungeonServer.Application.Abstractions.Core;
 using DungeonServer.Application.Abstractions.Dungeon;
+using DungeonServer.Application.Core.Movement.Storage;
 using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Dungeon.DungeonArchitect;
@@ -15,6 +17,7 @@ builder.Services.AddSingleton<IPlayerStore, InMemoryPlayerStore>();
 
 builder.Services.AddScoped<IDungeonArchitect, DungeonArchitect>();
 builder.Services.AddScoped<IDungeonController, DungeonController>();
+builder.Services.AddScoped<IMovementManager, MovementManager>();
 
 WebApplication app = builder.Build();
 

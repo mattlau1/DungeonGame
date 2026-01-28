@@ -1,3 +1,4 @@
+using DungeonServer.Application.Abstractions.Core;
 using DungeonServer.Application.Abstractions.Dungeon;
 using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Player.Models;
@@ -14,6 +15,7 @@ public sealed class DungeonController : IDungeonController
     private readonly IRoomStore _roomStore;
 
     private readonly IPlayerStore _playerStore;
+    private readonly IMovementManager _movementManager;
 
     public DungeonController(IDungeonArchitect dungeonArchitect, IRoomStore roomStore, IPlayerStore playerStore)
     {

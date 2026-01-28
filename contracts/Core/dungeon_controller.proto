@@ -6,7 +6,7 @@ import "Core/movement.proto";
 import "Core/player.proto";
 
 service DungeonController {
-  rpc SetMovementInput (SetMovementInputRequest) returns (SetMovementInputResponse);
+  rpc SetMovementInput (stream SetMovementInputRequest) returns (stream SetMovementInputResponse);
   rpc SpawnPlayer (SpawnRequest) returns (PlayerInfo);
   rpc GetPlayerInfo (PlayerInfoRequest) returns (PlayerInfo);
 }
