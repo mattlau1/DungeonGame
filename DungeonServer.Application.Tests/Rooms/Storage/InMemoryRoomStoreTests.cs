@@ -1,31 +1,28 @@
-﻿using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
+﻿using DungeonServer.Application.Core.Rooms.Models;
+using DungeonServer.Application.Core.Rooms.Storage;
 using Xunit;
 
 namespace DungeonServer.Application.Tests.Rooms.Storage;
 
 public sealed class InMemoryRoomStoreTests
 {
-    private static RoomState NewRoom()
-        => new()
-        {
-            RoomId = 0,
-            Width = 10,
-            Height = 8,
-            RoomType = RoomType.Combat
-        };
+    private static RoomState GenerateNewRoom()
+    {
+        return new RoomState(RoomType.Combat, 10, 8);
+    }
 
     [Fact]
     public async Task CreateRoomAsync_AssignsId_AndReturnsSnapshot()
     {
         var store = new InMemoryRoomStore();
 
-        RoomStateSnapshot snapshot = await store.CreateRoomAsync(NewRoom(), CancellationToken.None);
+        RoomState room = GenerateNewRoom();
+        RoomStateSnapshot snapshot = await store.CreateRoomAsync(room, CancellationToken.None);
 
         Assert.True(snapshot.RoomId > 0);
         Assert.Equal(RoomType.Combat, snapshot.RoomType);
-        Assert.Equal(10, snapshot.Width);
-        Assert.Equal(8, snapshot.Height);
+        Assert.Equal(room.Width, snapshot.Width);
+        Assert.Equal(room.Height, snapshot.Height);
     }
 
     [Fact]
@@ -33,8 +30,8 @@ public sealed class InMemoryRoomStoreTests
     {
         var store = new InMemoryRoomStore();
 
-        RoomStateSnapshot a = await store.CreateRoomAsync(NewRoom(), CancellationToken.None);
-        RoomStateSnapshot b = await store.CreateRoomAsync(NewRoom(), CancellationToken.None);
+        RoomStateSnapshot a = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
+        RoomStateSnapshot b = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
         Assert.NotEqual(a.RoomId, b.RoomId);
     }
@@ -44,7 +41,7 @@ public sealed class InMemoryRoomStoreTests
     {
         var store = new InMemoryRoomStore();
 
-        var room = NewRoom();
+        RoomState room = GenerateNewRoom();
         room.RoomId = 123;
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
@@ -75,7 +72,7 @@ public sealed class InMemoryRoomStoreTests
     {
         var store = new InMemoryRoomStore();
 
-        RoomStateSnapshot created = await store.CreateRoomAsync(NewRoom(), CancellationToken.None);
+        RoomStateSnapshot created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
         RoomStateSnapshot updated = await store.UpdateRoomAsync(
             created.RoomId,
@@ -100,7 +97,7 @@ public sealed class InMemoryRoomStoreTests
         await cts.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            store.CreateRoomAsync(NewRoom(), cts.Token));
+            store.CreateRoomAsync(GenerateNewRoom(), cts.Token));
     }
 
     [Fact]
@@ -108,7 +105,7 @@ public sealed class InMemoryRoomStoreTests
     {
         var store = new InMemoryRoomStore();
 
-        var created = await store.CreateRoomAsync(NewRoom(), CancellationToken.None);
+        var created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
         // Hold the gate with one update; cancel another update while it waits.
         using var gateHeld = new ManualResetEventSlim(false);
@@ -137,7 +134,7 @@ public sealed class InMemoryRoomStoreTests
     public async Task UpdateRoomAsync_IsAtomic_PerRoom_NoLostUpdates()
     {
         var store = new InMemoryRoomStore();
-        var created = await store.CreateRoomAsync(NewRoom(), CancellationToken.None);
+        var created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
         const int updates = 200;
 

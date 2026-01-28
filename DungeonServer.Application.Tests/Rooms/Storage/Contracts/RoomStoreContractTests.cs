@@ -1,5 +1,5 @@
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Models;
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
+using DungeonServer.Application.Core.Rooms.Models;
+using DungeonServer.Application.Core.Rooms.Storage;
 using Xunit;
 
 namespace DungeonServer.Application.Tests.Rooms.Storage.Contracts;
@@ -8,26 +8,23 @@ public abstract class RoomStoreContractTests
 {
     protected abstract IRoomStore CreateStore();
 
-    private static RoomState NewRoom()
-        => new()
-        {
-            RoomId = 0,
-            Width = 10,
-            Height = 8,
-            RoomType = RoomType.Combat
-        };
+    private static RoomState GenerateNewRoom()
+    {
+        return new RoomState(RoomType.Combat, 10, 8);
+    }
 
     [Fact]
     public async Task Create_AssignsId_AndReturnsSnapshot()
     {
         IRoomStore store = CreateStore();
 
-        RoomStateSnapshot snapshot = await store.CreateRoomAsync(NewRoom(), CancellationToken.None);
+        RoomState room = GenerateNewRoom();
+        RoomStateSnapshot snapshot = await store.CreateRoomAsync(room, CancellationToken.None);
 
         Assert.True(snapshot.RoomId > 0);
         Assert.Equal(RoomType.Combat, snapshot.RoomType);
-        Assert.Equal(10, snapshot.Width);
-        Assert.Equal(8, snapshot.Height);
+        Assert.Equal(room.Width, snapshot.Width);
+        Assert.Equal(room.Height, snapshot.Height);
     }
 
     [Fact]
@@ -53,8 +50,8 @@ public abstract class RoomStoreContractTests
     public async Task Update_MutatesState_AndReturnsSnapshot()
     {
         IRoomStore store = CreateStore();
-
-        RoomStateSnapshot created = await store.CreateRoomAsync(NewRoom(), CancellationToken.None);
+        
+        RoomStateSnapshot created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
         RoomStateSnapshot updated = await store.UpdateRoomAsync(created.RoomId, s =>
         {

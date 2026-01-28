@@ -1,4 +1,4 @@
-using DungeonServer.Application.Dungeon.DungeonArchitect.Rooms.Storage;
+using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Tests.Rooms.Storage.Contracts;
 
 namespace DungeonServer.Application.Tests.Rooms.Storage;
