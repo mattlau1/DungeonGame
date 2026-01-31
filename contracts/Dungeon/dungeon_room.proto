@@ -23,3 +23,10 @@ message PlayerState {
   int32 player_id = 1;
   dungeon_game.shared.Location location = 2;
 }
+
+enum RoomType {
+  ROOM_TYPE_UNKNOWN = 0;
+  ROOM_TYPE_COMBAT = 1;
+  ROOM_TYPE_TREASURE = 2;
+  ROOM_TYPE_BOSS = 3;
+}

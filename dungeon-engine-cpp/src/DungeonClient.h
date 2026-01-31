@@ -18,9 +18,5 @@ namespace DungeonGame {
         DungeonClient(DungeonClient &&) noexcept = default;
 
         DungeonClient &operator=(DungeonClient &&) noexcept = default;
-
-        void GenerateRoom(int seed, int floorLevel) const;
-    private:
-        std::unique_ptr<dungeon_game::protocol::DungeonArchitect::Stub> stub_;
     };
 }

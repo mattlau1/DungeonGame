@@ -22,7 +22,6 @@ builder.Services.AddScoped<IMovementManager, MovementManager>();
 WebApplication app = builder.Build();
 
 app.MapGrpcService<DungeonControllerService>();
-app.MapGrpcService<DungeonArchitectService>();
 app.MapGrpcService<RoomControllerService>();
 
 app.MapGet("/", () => "Dungeon Game Service is live. Connect via gRPC.");

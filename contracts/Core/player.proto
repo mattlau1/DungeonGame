@@ -5,8 +5,6 @@ package dungeon_game.core;
 import "Shared/shared_types.proto";
 
 message SpawnRequest {
-  int32 room_id = 1;
-  dungeon_game.shared.Location location = 2;
 }
 
 message PlayerInfo {
