@@ -4,8 +4,10 @@ package dungeon_game.core;
 
 import "Core/movement.proto";
 import "Core/player.proto";
+import "Core/room.proto";
 
 service DungeonController {
+  rpc SubscribeRoom (SubscribeRoomRequest) returns (stream RoomSnapshot);
   rpc SetMovementInput (stream SetMovementInputRequest) returns (stream SetMovementInputResponse);
   rpc SpawnPlayer (SpawnRequest) returns (PlayerInfo);
   rpc GetPlayerInfo (PlayerInfoRequest) returns (PlayerInfo);

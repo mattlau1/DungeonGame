@@ -21,8 +21,4 @@
     <ItemGroup>
       <ProjectReference Include="..\DungeonServer.Application\DungeonServer.Application.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Mappings\Dungeon\" />
-    </ItemGroup>
 </Project>

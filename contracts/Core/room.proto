@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package dungeon_game.core;
+
+import "Core/player.proto";
+
+enum RoomType {
+  ROOM_TYPE_UNKNOWN = 0;
+  ROOM_TYPE_COMBAT = 1;
+  ROOM_TYPE_TREASURE = 2;
+  ROOM_TYPE_BOSS = 3;
+}
+
+message SubscribeRoomRequest {
+  int32 player_id = 1;
+  int32 room_id = 2;
+}
+
+message RoomSnapshot {
+  int32 room_id = 1;
+  // uint64 server_tick = 2;
+  repeated PlayerInfo players = 3;
+}
