@@ -1,12 +1,10 @@
 using DungeonGame.Core;
 using DungeonServer.Application.Abstractions.Dungeon;
-using DungeonServer.Application.Abstractions.Core;
 using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Service.Mappings.Core;
 using DungeonServer.Service.Mappings.Shared;
 using DungeonServer.Application.Core.Movement.Models;
 using DungeonServer.Application.Core.Movement.Contracts;
-using DungeonServer.Application.Core.Shared;
 using Grpc.Core;
 
 namespace DungeonServer.Service.Services.Core;
@@ -14,12 +12,10 @@ namespace DungeonServer.Service.Services.Core;
 public class DungeonControllerService : DungeonController.DungeonControllerBase
 {
     private readonly IDungeonController _dungeonController;
-    private readonly IMovementManager _movementManager;
 
-    public DungeonControllerService(IDungeonController dungeonController, IMovementManager movementManager)
+    public DungeonControllerService(IDungeonController dungeonController)
     {
         _dungeonController = dungeonController;
-        _movementManager = movementManager;
     }
 
     public override async Task SetMovementInput(
@@ -31,16 +27,8 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         {
             SetMovementInputRequest req = requestStream.Current;
 
-            PlayerInfoResult currPlayer =
-                await _dungeonController.GetPlayerInfoAsync(req.PlayerId, context.CancellationToken);
-            Location currLocation = currPlayer.PlayerInfo.Location;
-
-            var destination = new Location(currLocation.X + req.InputX, currLocation.Y + req.InputY);
-
-            var appRequest = new MovementInputRequest(req.PlayerId, destination);
-
             MovementInputResponse appResponse =
-                await _movementManager.SetMovementInput(appRequest, context.CancellationToken);
+                await _dungeonController.SetMovementInputAsync(req.PlayerId, req.InputX, req.InputY, context.CancellationToken);
 
             var grpcResponse = new SetMovementInputResponse
             {

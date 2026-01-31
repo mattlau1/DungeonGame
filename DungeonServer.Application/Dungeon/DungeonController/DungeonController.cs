@@ -6,6 +6,7 @@ using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Contracts;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
+using DungeonServer.Application.Core.Movement.Contracts;
 
 namespace DungeonServer.Application.Dungeon.DungeonController;
 
@@ -17,11 +18,12 @@ public sealed class DungeonController : IDungeonController
     private readonly IPlayerStore _playerStore;
     private readonly IMovementManager _movementManager;
 
-    public DungeonController(IDungeonArchitect dungeonArchitect, IRoomStore roomStore, IPlayerStore playerStore)
+    public DungeonController(IDungeonArchitect dungeonArchitect, IRoomStore roomStore, IPlayerStore playerStore, IMovementManager movementManager)
     {
         _roomStore = roomStore;
         _playerStore = playerStore;
         _dungeonArchitect = dungeonArchitect;
+        _movementManager = movementManager;
     }
 
     public async Task<PlayerInfoResult> SpawnPlayerAsync(CancellationToken ct)
@@ -76,5 +78,20 @@ public sealed class DungeonController : IDungeonController
         };
 
         return new PlayerInfoResult(player.RoomId, playerInfo);
+    }
+
+    public async Task<MovementInputResponse> SetMovementInputAsync(int playerId, float inputX, float inputY, CancellationToken ct)
+    {
+        PlayerInfoResult currPlayer = await GetPlayerInfoAsync(playerId, ct);
+        Location currLocation = currPlayer.PlayerInfo.Location;
+
+        var destination = new Location(currLocation.X + inputX, currLocation.Y + inputY);
+
+        var appRequest = new MovementInputRequest(playerId, destination);
+
+        MovementInputResponse appResponse =
+            await _movementManager.SetMovementInput(appRequest, ct);
+
+        return appResponse;
     }
 }
