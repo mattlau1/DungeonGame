@@ -19,7 +19,14 @@ public class InMemoryRoomStore : IRoomStore
 
     private readonly ConcurrentDictionary<int, LockableRoomState> _roomStates = new();
 
+    private readonly IRoomSubscriptionRegistry _subscriptionRegistry;
+
     private int _nextRoomId;
+
+    public InMemoryRoomStore(IRoomSubscriptionRegistry subscriptionRegistry)
+    {
+        _subscriptionRegistry = subscriptionRegistry;
+    }
 
     public Task<RoomStateSnapshot> CreateRoomAsync(RoomState room, CancellationToken ct)
     {
@@ -38,10 +45,13 @@ public class InMemoryRoomStore : IRoomStore
             throw new InvalidOperationException("Failed to create room due to id collision");
         }
 
-        return Task.FromResult(RoomStateSnapshot.From(entry.RoomState));
+        RoomStateSnapshot snapshot = RoomStateSnapshot.From(entry.RoomState);
+        _subscriptionRegistry.PublishUpdate(roomId, snapshot, RoomUpdateContext.Broadcast());
+
+        return Task.FromResult(snapshot);
     }
 
-    public async Task<RoomStateSnapshot> UpdateRoomAsync(int roomId, Action<RoomState> updateAction,
+    public async Task<RoomStateSnapshot> UpdateRoomAsync(int roomId, Action<RoomState> updateAction, RoomUpdateContext context,
         CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -55,7 +65,9 @@ public class InMemoryRoomStore : IRoomStore
         try
         {
             updateAction(room.RoomState);
-            return RoomStateSnapshot.From(room.RoomState);
+            var snapshot = RoomStateSnapshot.From(room.RoomState);
+            _subscriptionRegistry.PublishUpdate(roomId, snapshot, context);
+            return snapshot;
         }
         finally
         {
@@ -81,5 +93,31 @@ public class InMemoryRoomStore : IRoomStore
         {
             room.Gate.Release();
         }
+    }
+
+    public async Task PublishRoomUpdateAsync(int roomId, RoomUpdateContext context, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        if (!_roomStates.TryGetValue(roomId, out LockableRoomState? room))
+        {
+            return;
+        }
+
+        await room.Gate.WaitAsync(ct);
+        try
+        {
+            RoomStateSnapshot snapshot = RoomStateSnapshot.From(room.RoomState);
+            _subscriptionRegistry.PublishUpdate(roomId, snapshot, context);
+        }
+        finally
+        {
+            room.Gate.Release();
+        }
+    }
+
+    public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int roomId, int subscriberPlayerId, CancellationToken ct)
+    {
+        return _subscriptionRegistry.SubscribeAsync(roomId, subscriberPlayerId, ct);
     }
 }

@@ -11,6 +11,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddGrpc();
 
+builder.Services.AddSingleton<IRoomSubscriptionRegistry, RoomSubscriptionRegistry>();
 builder.Services.AddSingleton<IRoomStore, InMemoryRoomStore>();
 builder.Services.AddSingleton<IPlayerStore, InMemoryPlayerStore>();
 

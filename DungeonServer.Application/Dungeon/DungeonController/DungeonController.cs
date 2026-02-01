@@ -19,7 +19,11 @@ public sealed class DungeonController : IDungeonController
     private readonly IPlayerStore _playerStore;
     private readonly IMovementManager _movementManager;
 
-    public DungeonController(IDungeonArchitect dungeonArchitect, IRoomStore roomStore, IPlayerStore playerStore, IMovementManager movementManager)
+    public DungeonController(
+        IDungeonArchitect dungeonArchitect,
+        IRoomStore roomStore,
+        IPlayerStore playerStore,
+        IMovementManager movementManager)
     {
         _roomStore = roomStore;
         _playerStore = playerStore;
@@ -42,6 +46,7 @@ public sealed class DungeonController : IDungeonController
         await _roomStore.UpdateRoomAsync(
             startingRoom.RoomStateSnapshot.RoomId,
             room => room.PlayerIds.Add(player.PlayerId),
+            RoomUpdateContext.Broadcast(),
             ct);
 
         PlayerSnapshot updated = await _playerStore.UpdatePlayerAsync(
@@ -81,7 +86,11 @@ public sealed class DungeonController : IDungeonController
         return new PlayerInfoResult(player.RoomId, playerInfo);
     }
 
-    public async Task<MovementInputResponse> SetMovementInputAsync(int playerId, float inputX, float inputY, CancellationToken ct)
+    public async Task<MovementInputResponse> SetMovementInputAsync(
+        int playerId,
+        float inputX,
+        float inputY,
+        CancellationToken ct)
     {
         PlayerInfoResult currPlayer = await GetPlayerInfoAsync(playerId, ct);
         Location currLocation = currPlayer.PlayerInfo.Location;
@@ -93,11 +102,13 @@ public sealed class DungeonController : IDungeonController
         MovementInputResponse appResponse =
             await _movementManager.SetMovementInput(appRequest, ct);
 
+        await _roomStore.PublishRoomUpdateAsync(currPlayer.RoomId, RoomUpdateContext.ExcludePlayer(playerId), ct);
+
         return appResponse;
     }
 
     public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        return _roomStore.SubscribeRoomAsync(roomId, playerId, ct);
     }
 }
