@@ -81,4 +81,10 @@ public class InMemoryPlayerStore : IPlayerStore
             player.Gate.Release();
         }
     }
+
+    public Task<IEnumerable<PlayerSnapshot>> GetAllPlayersAsync(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult(_players.Values.Select(p => PlayerSnapshot.From(p.PlayerInfo)));
+    }
 }

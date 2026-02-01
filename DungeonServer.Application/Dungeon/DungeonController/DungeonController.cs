@@ -33,19 +33,51 @@ public sealed class DungeonController : IDungeonController
 
     public async Task<PlayerInfoResult> SpawnPlayerAsync(CancellationToken ct)
     {
+        PlayerInfoResult? existingJoin = await TryJoinExistingRoomAsync(ct);
+        if (existingJoin is not null)
+        {
+            return existingJoin;
+        }
+
+        return await SpawnPlayerInNewRoom(ct);
+    }
+
+    private async Task<PlayerInfoResult> SpawnPlayerInNewRoom(CancellationToken ct)
+    {
         var request = new GenerateRoomRequest();
         GenerateRoomResult startingRoom = await _dungeonArchitect.GenerateRoomAsync(request, ct);
 
-        // TODO: Change this to room entry point or choose middle if it is the spawn room
         var spawnLocation = new Location(
             X: startingRoom.RoomStateSnapshot.Width / 2f,
             Y: startingRoom.RoomStateSnapshot.Height / 2f);
 
-        PlayerSnapshot player = await _playerStore.CreatePlayerAsync(spawnLocation, ct);
+        return await SpawnPlayerAtRoom(startingRoom.RoomStateSnapshot.RoomId, spawnLocation, ct);
+    }
+
+    private async Task<PlayerInfoResult?> TryJoinExistingRoomAsync(CancellationToken ct)
+    {
+        IEnumerable<PlayerSnapshot> allPlayers = await _playerStore.GetAllPlayersAsync(ct);
+        PlayerSnapshot[] occupants = allPlayers.Where(p => p.RoomId != RoomConstants.InvalidRoomId)
+            .OrderBy(p => p.PlayerId)
+            .ToArray();
+
+        if (occupants.Length == 0)
+        {
+            return null;
+        }
+
+        (_, int targetRoomId, Location targetLocation) = occupants.First();
+
+        return await SpawnPlayerAtRoom(targetRoomId, targetLocation, ct);
+    }
+
+    private async Task<PlayerInfoResult> SpawnPlayerAtRoom(int roomId, Location location, CancellationToken ct)
+    {
+        PlayerSnapshot player = await _playerStore.CreatePlayerAsync(location, ct);
 
         await _roomStore.UpdateRoomAsync(
-            startingRoom.RoomStateSnapshot.RoomId,
-            room => room.PlayerIds.Add(player.PlayerId),
+            roomId,
+            r => r.PlayerIds.Add(player.PlayerId),
             RoomUpdateContext.Broadcast(),
             ct);
 
@@ -53,8 +85,8 @@ public sealed class DungeonController : IDungeonController
             player.PlayerId,
             info =>
             {
-                info.RoomId = startingRoom.RoomStateSnapshot.RoomId;
-                info.Location = spawnLocation;
+                info.RoomId = roomId;
+                info.Location = location;
             },
             ct);
 
@@ -65,7 +97,7 @@ public sealed class DungeonController : IDungeonController
             Location = updated.Location
         };
 
-        return new PlayerInfoResult(updated.RoomId, playerInfo);
+        return new PlayerInfoResult(roomId, playerInfo);
     }
 
     public async Task<PlayerInfoResult> GetPlayerInfoAsync(int playerId, CancellationToken ct)
