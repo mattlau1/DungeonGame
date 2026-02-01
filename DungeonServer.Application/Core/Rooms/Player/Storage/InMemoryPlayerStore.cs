@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
-using DungeonServer.Application.Core.Player.Models;
+using DungeonServer.Application.Core.Rooms.Player.Models;
 using DungeonServer.Application.Core.Shared;
 
-namespace DungeonServer.Application.Core.Player.Storage;
+namespace DungeonServer.Application.Core.Rooms.Player.Storage;
 
 public class InMemoryPlayerStore : IPlayerStore
 {

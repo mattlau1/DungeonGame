@@ -1,5 +1,5 @@
-using DungeonServer.Application.Core.Player.Models;
+using DungeonServer.Application.Core.Rooms.Player.Models;
 
-namespace DungeonServer.Application.Core.Player.Contracts;
+namespace DungeonServer.Application.Core.Rooms.Player.Contracts;
 
 public record PlayerInfoResult(int RoomId, PlayerInfo PlayerInfo);

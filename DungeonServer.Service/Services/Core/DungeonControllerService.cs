@@ -1,11 +1,11 @@
 using DungeonGame.Core;
 using DungeonServer.Application.Abstractions.Dungeon;
-using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Service.Mappings.Core;
 using DungeonServer.Service.Mappings.Shared;
 using DungeonServer.Application.Core.Movement.Models;
 using DungeonServer.Application.Core.Movement.Contracts;
 using DungeonServer.Application.Core.Rooms.Models;
+using DungeonServer.Application.Core.Rooms.Player.Contracts;
 using Grpc.Core;
 
 namespace DungeonServer.Service.Services.Core;

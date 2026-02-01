@@ -1,6 +1,6 @@
-using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Movement.Contracts;
 using DungeonServer.Application.Core.Rooms.Models;
+using DungeonServer.Application.Core.Rooms.Player.Contracts;
 
 namespace DungeonServer.Application.Abstractions.Dungeon;
 

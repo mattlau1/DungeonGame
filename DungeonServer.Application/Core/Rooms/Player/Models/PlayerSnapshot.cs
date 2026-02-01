@@ -1,6 +1,6 @@
 using DungeonServer.Application.Core.Shared;
 
-namespace DungeonServer.Application.Core.Player.Models;
+namespace DungeonServer.Application.Core.Rooms.Player.Models;
 
 /// <summary>
 /// Immutable view of a player's current state.
