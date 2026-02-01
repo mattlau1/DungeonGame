@@ -1,6 +1,4 @@
-using DungeonServer.Application.Core.Movement.Contracts;
-
-namespace DungeonServer.Application.Abstractions.Core;
+namespace DungeonServer.Application.Core.Movement.Contracts;
 
 public interface IMovementManager
 {

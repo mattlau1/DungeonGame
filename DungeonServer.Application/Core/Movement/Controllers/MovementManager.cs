@@ -1,11 +1,10 @@
-using DungeonServer.Application.Abstractions.Core;
 using DungeonServer.Application.Core.Movement.Contracts;
 using DungeonServer.Application.Core.Movement.Models;
-using DungeonServer.Application.Core.Rooms.Player.Models;
-using DungeonServer.Application.Core.Rooms.Player.Storage;
+using DungeonServer.Application.Core.Player.Models;
+using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Shared;
 
-namespace DungeonServer.Application.Core.Movement.Storage;
+namespace DungeonServer.Application.Core.Movement.Controllers;
 
 public class MovementManager : IMovementManager
 {

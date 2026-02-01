@@ -1,10 +1,11 @@
-using DungeonServer.Application.Abstractions.Core;
-using DungeonServer.Application.Abstractions.Dungeon;
-using DungeonServer.Application.Core.Movement.Storage;
-using DungeonServer.Application.Core.Rooms.Player.Storage;
+using DungeonServer.Application.Core.Dungeon.Controllers;
+using DungeonServer.Application.Core.Movement.Contracts;
+using DungeonServer.Application.Core.Movement.Controllers;
+using DungeonServer.Application.Core.Player.Storage;
+using DungeonServer.Application.Core.Rooms.Contracts;
+using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Storage;
-using DungeonServer.Application.Dungeon.DungeonArchitect;
-using DungeonServer.Application.Dungeon.DungeonController;
+using DungeonServer.Application.External;
 using DungeonServer.Service.Services.Core;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
