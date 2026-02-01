@@ -53,9 +53,11 @@ public class MovementManager : IMovementManager
 
         // TODO: Check collisions here
         if (false)
+#pragma warning disable CS0162 // Unreachable code detected
         {
             return MovementRequestStatus.Blocked;
         }
+#pragma warning restore CS0162 // Unreachable code detected
 
         return MovementRequestStatus.Ok;
     }
