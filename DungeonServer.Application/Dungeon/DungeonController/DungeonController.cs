@@ -7,6 +7,7 @@ using DungeonServer.Application.Core.Rooms.Contracts;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
 using DungeonServer.Application.Core.Movement.Contracts;
+using DungeonServer.Application.Core.Rooms.Models;
 
 namespace DungeonServer.Application.Dungeon.DungeonController;
 
@@ -93,5 +94,10 @@ public sealed class DungeonController : IDungeonController
             await _movementManager.SetMovementInput(appRequest, ct);
 
         return appResponse;
+    }
+
+    public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct)
+    {
+        throw new NotImplementedException();
     }
 }
