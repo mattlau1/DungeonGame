@@ -68,6 +68,7 @@ public sealed class DungeonController : IDungeonController
         MovementInputResponse appResponse =
             await _movementManager.SetMovementInput(appRequest, ct);
 
+        // Publish room update excluding the moving player from receiving their own movement notification.
         await _roomStore.PublishRoomUpdateAsync(currPlayer.RoomId, RoomUpdateContext.ExcludePlayer(playerId), ct);
 
         return appResponse;
