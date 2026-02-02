@@ -16,9 +16,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_ReturnsValidPlayerInfoResult()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -33,9 +33,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_CreatesPlayerInStore()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -53,9 +53,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_CreatesNewRoomWhenNoneExist()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -71,9 +71,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_SpawnsAtCenterOfRoom()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -91,9 +91,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_LocationWithinRoomBounds()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -108,9 +108,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_AssociatesPlayerWithRoom()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -126,9 +126,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_MultipleSpawns_GenerateUniquePlayerIds()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -141,9 +141,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_SecondPlayerJoinsExistingRoom()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -162,9 +162,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_SecondPlayerSpawnsAtFirstPlayerLocation()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -178,9 +178,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_RespectsCancellationToken()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -194,9 +194,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_RoomIdIsInvalidBeforeUpdate()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -209,9 +209,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_ViaDungeonController()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var movementManager = new MovementManager(playerStore);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
@@ -235,9 +235,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_PlayerAddedToRoomPlayerIds()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -253,9 +253,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_ThirdPlayerJoinsOldestRoom()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -277,9 +277,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_WhenRoomHasNoPlayers_CreatesNewRoom()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 
@@ -309,9 +309,9 @@ public class PlayerSpawningTests
     [Fact]
     public async Task SpawnPlayerAsync_AllPlayersInInvalidRoomId_CreatesNewRoom()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
 

@@ -7,6 +7,7 @@ using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
+using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Shared;
 using Xunit;
 
@@ -17,8 +18,8 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_CanCreateSubscription()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var movementManager = new MovementManager(playerStore);
         var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
@@ -53,8 +54,8 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_EmitsOnRoomUpdate_ShouldReflectNewPlayer()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var movementManager = new MovementManager(playerStore);
         var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
@@ -112,8 +113,8 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_InvalidIds_ReturnsNoEmissions()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var movementManager = new MovementManager(playerStore);
         var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
@@ -140,8 +141,8 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_MultipleSubscribers_AllReceiveUpdates()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var movementManager = new MovementManager(playerStore);
         var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
@@ -207,11 +208,14 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_RoomStateChanges_ReflectedInSnapshots()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var roomStore = new InMemoryRoomStore(subscriptionRegistry);
 
         var room = new RoomState(RoomType.Combat, 10, 8);
         RoomStateSnapshot createdRoom = await roomStore.CreateRoomAsync(room, CancellationToken.None);
+
+        var testPlayer1 = await playerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
@@ -220,7 +224,8 @@ public class RoomSubscriptionTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in roomStore.SubscribeRoomAsync(createdRoom.RoomId, 1, cts.Token))
+                await foreach (RoomStateSnapshot snap in roomStore.SubscribeRoomAsync(testPlayer1.PlayerId,
+                                   createdRoom.RoomId, cts.Token))
                 {
                     snapshots.Add(snap);
                 }
@@ -253,8 +258,8 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_Cancellation_StopsReceiving()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var movementManager = new MovementManager(playerStore);
         var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
@@ -306,10 +311,10 @@ public class RoomSubscriptionTests
     }
 
     [Fact]
-    public async Task SubscribeRoomAsync_ExcludedDataLeaksToLateSubscribers()
+    public async Task SubscribeRoomAsync_ReceivesInitialSnapshotEvenIfLastUpdateExcludedThem()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
         var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var movementManager = new MovementManager(playerStore);
         var roomStore = new InMemoryRoomStore(subscriptionRegistry);
         var architect = new DungeonArchitect(roomStore);
@@ -321,6 +326,7 @@ public class RoomSubscriptionTests
 
         await Task.Delay(100);
 
+        // Publish an update that excludes this player (simulating they triggered it)
         await roomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.ExcludePlayer(player1.PlayerInfo.Id),
             CancellationToken.None);
 
@@ -337,6 +343,7 @@ public class RoomSubscriptionTests
                                    cts.Token))
                 {
                     snapshots.Add(snap);
+                    break; // Only need the initial snapshot
                 }
             }
             catch (OperationCanceledException)
@@ -346,6 +353,9 @@ public class RoomSubscriptionTests
 
         await task;
 
-        Assert.Empty(snapshots);
+        // Player should receive the initial room state snapshot even if the last update excluded them.
+        // Exclusion is for preventing self-notification, not hiding data from players.
+        Assert.Single(snapshots);
+        Assert.Equal(roomId, snapshots[0].RoomId);
     }
 }

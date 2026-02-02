@@ -1,5 +1,6 @@
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
+using DungeonServer.Application.Core.Player.Storage;
 using Xunit;
 
 namespace DungeonServer.Application.Tests.Rooms;
@@ -14,7 +15,8 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task CreateRoomAsync_AssignsId_AndReturnsSnapshot()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var store = new InMemoryRoomStore(subscriptionRegistry);
 
         RoomState room = GenerateNewRoom();
@@ -29,7 +31,8 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task CreateRoomAsync_MultipleRooms_GeneratesUniqueIds()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var store = new InMemoryRoomStore(subscriptionRegistry);
 
         RoomStateSnapshot a = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
@@ -41,7 +44,8 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task CreateRoomAsync_ThrowsIfRoomIdIsNotZero()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var store = new InMemoryRoomStore(subscriptionRegistry);
 
         RoomState room = GenerateNewRoom();
@@ -54,7 +58,8 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task GetRoomAsync_ReturnsNull_WhenRoomDoesNotExist()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var store = new InMemoryRoomStore(subscriptionRegistry);
 
         RoomStateSnapshot? snapshot = await store.GetRoomAsync(roomId: 999, CancellationToken.None);
@@ -65,7 +70,8 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task UpdateRoomAsync_Throws_WhenRoomDoesNotExist()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var store = new InMemoryRoomStore(subscriptionRegistry);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
@@ -75,7 +81,8 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task UpdateRoomAsync_MutatesState_AndReturnsUpdatedSnapshot()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var store = new InMemoryRoomStore(subscriptionRegistry);
 
         RoomStateSnapshot created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
@@ -98,7 +105,8 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task CreateRoomAsync_RespectsCancellationToken()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var store = new InMemoryRoomStore(subscriptionRegistry);
 
         using var cts = new CancellationTokenSource();
@@ -111,7 +119,8 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task UpdateRoomAsync_RespectsCancellationTokenWhileWaiting()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var store = new InMemoryRoomStore(subscriptionRegistry);
 
         RoomStateSnapshot created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
@@ -143,7 +152,8 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task UpdateRoomAsync_IsAtomic_PerRoom_NoLostUpdates()
     {
-        var subscriptionRegistry = new RoomSubscriptionRegistry();
+        var playerStore = new InMemoryPlayerStore();
+        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
         var store = new InMemoryRoomStore(subscriptionRegistry);
         RoomStateSnapshot created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 

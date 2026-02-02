@@ -22,9 +22,9 @@ public static class DungeonControllerTests
 
     private static ControllerComponents CreateController()
     {
-        var registry = new RoomSubscriptionRegistry();
-        var roomStore = new InMemoryRoomStore(registry);
         var playerStore = new InMemoryPlayerStore();
+        var registry = new RoomSubscriptionRegistry(playerStore);
+        var roomStore = new InMemoryRoomStore(registry);
         var movementManager = new MovementManager(playerStore);
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore);
@@ -554,7 +554,7 @@ public static class DungeonControllerTests
         }
 
         [Fact]
-        public async Task ExcludedDataLeaksToLateSubscribers()
+        public async Task ReceivesInitialSnapshotEvenIfLastUpdateExcludedThem()
         {
             ControllerComponents deps = CreateController();
             PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
@@ -579,6 +579,7 @@ public static class DungeonControllerTests
                                        cts.Token))
                     {
                         snapshots.Add(snap);
+                        break; // Only need the initial snapshot
                     }
                 }
                 catch (OperationCanceledException)
@@ -588,7 +589,52 @@ public static class DungeonControllerTests
 
             await task;
 
-            Assert.Empty(snapshots);
+            // Player should receive the initial room state snapshot even if the last update excluded them.
+            // Exclusion prevents self-notification, but doesn't hide current room state from new subscribers.
+            Assert.Single(snapshots);
+            Assert.Equal(roomId, snapshots[0].RoomId);
+        }
+
+        [Fact]
+        public async Task PlayerMoves_ExcludedFromOwnUpdateButOtherPlayerReceivesIt()
+        {
+            ControllerComponents deps = CreateController();
+            PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
+            PlayerInfoResult player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
+            int roomId = player1.RoomId;
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            var player2Snapshots = new List<RoomStateSnapshot>();
+
+            Task subscriptionTask = Task.Run(async () =>
+            {
+                try
+                {
+                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player2.PlayerInfo.Id,
+                                       roomId,
+                                       cts.Token))
+                    {
+                        player2Snapshots.Add(snap);
+                        if (player2Snapshots.Count >= 2) // Initial + movement update
+                            break;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
+
+            await Task.Delay(100);
+
+            // Player 1 moves - this should generate an update excluded for player 1 but sent to player 2
+            MovementInputResponse moveResult = 
+                await deps.Controller.SetMovementInputAsync(player1.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
+
+            await subscriptionTask;
+
+            // Player 2 should receive the initial snapshot and the movement update from player 1
+            Assert.Equal(MovementRequestStatus.Ok, moveResult.status);
+            Assert.True(player2Snapshots.Count >= 2);
         }
     }
 
