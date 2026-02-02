@@ -75,6 +75,6 @@ public sealed class DungeonController : IDungeonController
 
     public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct)
     {
-        return _roomStore.SubscribeRoomAsync(roomId, playerId, ct);
+        return _roomStore.SubscribeRoomAsync(playerId, roomId, ct);
     }
 }

@@ -120,10 +120,10 @@ public class InMemoryRoomStore : IRoomStore
     }
 
     public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(
-        int roomId,
         int subscriberPlayerId,
+        int roomId,
         CancellationToken ct)
     {
-        return _subscriptionRegistry.SubscribeAsync(roomId, subscriberPlayerId, ct);
+        return _subscriptionRegistry.SubscribeAsync(subscriberPlayerId, roomId, ct);
     }
 }

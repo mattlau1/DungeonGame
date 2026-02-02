@@ -11,15 +11,22 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
     private sealed class RoomChannel
     {
-        public Channel<RoomUpdate> UpdateChannel { get; } = Channel.CreateUnbounded<RoomUpdate>();
+        public Channel<RoomUpdate> UpdateChannel { get; } = Channel.CreateBounded<RoomUpdate>(
+            new BoundedChannelOptions(1)
+            {
+                FullMode = BoundedChannelFullMode.DropOldest
+            });
+
+        public RoomStateSnapshot? CurrentState { get; set; }
+
         public int SubscriberCount { get; set; }
     }
 
     private readonly ConcurrentDictionary<int, RoomChannel> _rooms = new();
 
     public async IAsyncEnumerable<RoomStateSnapshot> SubscribeAsync(
-        int roomId,
         int subscriberPlayerId,
+        int roomId,
         [EnumeratorCancellation] CancellationToken ct)
     {
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
@@ -27,6 +34,12 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
         try
         {
+            // Emit the current state immediately on subscribe
+            if (room.CurrentState != null)
+            {
+                yield return room.CurrentState;
+            }
+            
             await foreach (RoomUpdate update in room.UpdateChannel.Reader.ReadAllAsync(ct))
             {
                 if (update.Context.ExcludePlayerId != subscriberPlayerId)
@@ -48,10 +61,15 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
     public void PublishUpdate(int roomId, RoomStateSnapshot snapshot, RoomUpdateContext context)
     {
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
-        var update = new RoomUpdate(snapshot, context);
+        room.CurrentState = snapshot;
 
-        while (!room.UpdateChannel.Writer.TryWrite(update))
+        if (room.SubscriberCount > 0)
         {
+            var update = new RoomUpdate(snapshot, context);
+
+            while (!room.UpdateChannel.Writer.TryWrite(update))
+            {
+            }
         }
     }
 }
