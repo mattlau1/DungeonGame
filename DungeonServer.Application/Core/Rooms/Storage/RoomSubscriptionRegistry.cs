@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
+using DungeonServer.Application.Core.Player.Storage;
 
 namespace DungeonServer.Application.Core.Rooms.Storage;
 
@@ -23,12 +25,24 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
     }
 
     private readonly ConcurrentDictionary<int, RoomChannel> _rooms = new();
+    private readonly IPlayerStore _playerStore;
+
+    public RoomSubscriptionRegistry(IPlayerStore playerStore)
+    {
+        _playerStore = playerStore;
+    }
 
     public async IAsyncEnumerable<RoomStateSnapshot> SubscribeAsync(
         int subscriberPlayerId,
         int roomId,
         [EnumeratorCancellation] CancellationToken ct)
     {
+        PlayerSnapshot? player = await _playerStore.GetPlayerAsync(subscriberPlayerId, ct);
+        if (player == null)
+        {
+            yield break;
+        }
+
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
         room.SubscriberCount++;
 
