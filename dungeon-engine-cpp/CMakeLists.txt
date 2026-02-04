@@ -25,8 +25,11 @@ file(GLOB_RECURSE PROTO_FILES "${PROTO_DIR}/*.proto")
 # Create Executable
 add_executable(dungeon_engine
         main.cpp
-        src/DungeonClient.h
-        src/DungeonClient.cpp
+        src/engine/network/DungeonClient.h
+        src/engine/network/DungeonClient.cpp
+        src/engine/graphics/Renderer.h
+        src/engine/graphics/Renderer.cpp
+        src/engine/graphics/Renderer.cpp
 )
 
 get_target_property(GRPC_CPP_PLUGIN_EXE gRPC::grpc_cpp_plugin LOCATION)
