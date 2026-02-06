@@ -1,8 +1,5 @@
 #include "main.h"
 #include "raylib.h"
-#include "game_protocol.pb.h"
-#include "game_protocol.grpc.pb.h"
-#include "grpcpp/create_channel.h"
 #include "engine/network/DungeonClient.h"
 #include "engine/graphics/Renderer.h"
 
@@ -13,9 +10,8 @@ int main() {
 
     DungeonGame::Engine::Graphics::Renderer renderer(screenWidth, screenHeight, "DungeonGame");
 
-    auto const serverAddress = "localhost:5142";
-    auto const channel = grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials());
-    DungeonGame::DungeonClient dungeonClient{channel};
+    DungeonGame::DungeonClient dungeonClient{};
+    dungeonClient.Connect();
 
     while (!renderer.ShouldClose()) {
         renderer.BeginFrame();

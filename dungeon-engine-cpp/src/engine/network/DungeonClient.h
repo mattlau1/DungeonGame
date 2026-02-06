@@ -1,15 +1,18 @@
 #pragma once
 #include <memory>
 
-#include "game_protocol.grpc.pb.h"
-#include "grpcpp/channel.h"
+#include "Core/dungeon_controller.grpc.pb.h"
 
 namespace DungeonGame {
+    namespace GameProto = dungeon_game::core;
+
     class DungeonClient {
     public:
-        explicit DungeonClient(std::shared_ptr<grpc::Channel> channel);
+        explicit DungeonClient();
 
         ~DungeonClient();
+
+        void Connect();
 
         DungeonClient(const DungeonClient &) = delete;
 
@@ -18,5 +21,11 @@ namespace DungeonGame {
         DungeonClient(DungeonClient &&) noexcept = default;
 
         DungeonClient &operator=(DungeonClient &&) noexcept = default;
+
+    private:
+        static std::string GetServerAddress();
+        std::unique_ptr<GameProto::DungeonController::Stub> _stub;
     };
+
+
 }
