@@ -29,7 +29,6 @@ add_executable(dungeon_engine
         src/engine/network/DungeonClient.cpp
         src/engine/graphics/Renderer.h
         src/engine/graphics/Renderer.cpp
-        src/engine/graphics/Renderer.cpp
 )
 
 get_target_property(GRPC_CPP_PLUGIN_EXE gRPC::grpc_cpp_plugin LOCATION)
