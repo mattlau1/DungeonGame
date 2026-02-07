@@ -25,8 +25,8 @@ file(GLOB_RECURSE PROTO_FILES "${PROTO_DIR}/*.proto")
 # Create Executable
 add_executable(dungeon_engine
         main.cpp
-        src/engine/network/DungeonClient.h
-        src/engine/network/DungeonClient.cpp
+        src/game/network/DungeonClient.h
+        src/game/network/DungeonClient.cpp
         src/engine/graphics/Renderer.h
         src/engine/graphics/Renderer.cpp
 )

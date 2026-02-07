@@ -7,7 +7,7 @@ namespace DungeonGame {
     DungeonClient::DungeonClient() = default;
 
     void DungeonClient::Connect() {
-        bool alreadyConnected = (_stub != nullptr);
+        const bool alreadyConnected = (_stub != nullptr);
         if (alreadyConnected) {
             return;
         }
