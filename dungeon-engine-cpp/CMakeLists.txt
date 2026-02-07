@@ -38,6 +38,9 @@ add_executable(dungeon_engine
         src/game/models/Movement.h
         src/game/mappings/CommonMappings.h
         src/game/mappings/CommonMappings.cpp
+        src/game/models/Room.h
+        src/game/mappings/RoomMappings.h
+        src/game/mappings/RoomMappings.cpp
 )
 
 get_target_property(GRPC_CPP_PLUGIN_EXE gRPC::grpc_cpp_plugin LOCATION)
