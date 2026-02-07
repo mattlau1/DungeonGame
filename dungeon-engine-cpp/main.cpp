@@ -1,7 +1,7 @@
 #include "main.h"
 #include "raylib.h"
-#include "engine/network/DungeonClient.h"
 #include "engine/graphics/Renderer.h"
+#include "game/network/DungeonClient.h"
 
 int main() {
     // TODO: change default window size
