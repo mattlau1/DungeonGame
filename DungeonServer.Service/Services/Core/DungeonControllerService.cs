@@ -37,7 +37,7 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
                 {
                     PlayerInfoResult player =
                         await _dungeonController.GetPlayerInfoAsync(playerId, context.CancellationToken);
-                    return player.ToGrpcPlayerInfo();
+                    return player.ToProto();
                 });
 
             PlayerInfo[] grpcPlayers = await Task.WhenAll(getPlayerInfoTasks);
@@ -60,19 +60,7 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
                 await _dungeonController.SetMovementInputAsync(request.PlayerId, request.InputX, request.InputY,
                     context.CancellationToken);
 
-            var grpcResponse = new SetMovementInputResponse
-            {
-                Result = appResponse.status switch
-                {
-                    MovementRequestStatus.Ok => InputResult.Ok,
-                    MovementRequestStatus.Blocked => InputResult.Blocked,
-                    MovementRequestStatus.TooFast => InputResult.TooFast,
-                    MovementRequestStatus.InvalidPlayer => InputResult.InvalidPlayer,
-                    _ => InputResult.Unspecified
-                },
-                AuthoritativeLocation = appResponse.location.ToGrpcLocation(),
-                DebugMessage = appResponse.debugMsg
-            };
+            SetMovementInputResponse grpcResponse = appResponse.ToProto();
 
             await responseStream.WriteAsync(grpcResponse);
 
@@ -86,13 +74,13 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
     public override async Task<PlayerInfo> SpawnPlayer(SpawnRequest request, ServerCallContext context)
     {
         PlayerInfoResult result = await _dungeonController.SpawnPlayerAsync(context.CancellationToken);
-        return result.ToGrpcPlayerInfo();
+        return result.ToProto();
     }
 
     public override async Task<PlayerInfo> GetPlayerInfo(PlayerInfoRequest request, ServerCallContext context)
     {
         PlayerInfoResult result =
             await _dungeonController.GetPlayerInfoAsync(request.PlayerId, context.CancellationToken);
-        return result.ToGrpcPlayerInfo();
+        return result.ToProto();
     }
 }
