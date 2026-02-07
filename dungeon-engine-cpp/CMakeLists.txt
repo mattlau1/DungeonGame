@@ -33,6 +33,9 @@ add_executable(dungeon_engine
         src/game/mappings/PlayerMappings.cpp
         src/game/models/PlayerInfo.h
         src/game/models/CommonTypes.h
+        src/game/mappings/MovementMappings.cpp
+        src/game/mappings/MovementMappings.h
+        src/game/models/Movement.h
         src/game/mappings/CommonMappings.h
         src/game/mappings/CommonMappings.cpp
 )
