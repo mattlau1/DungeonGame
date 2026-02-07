@@ -33,6 +33,8 @@ add_executable(dungeon_engine
         src/game/mappings/PlayerMappings.cpp
         src/game/models/PlayerInfo.h
         src/game/models/CommonTypes.h
+        src/game/mappings/CommonMappings.h
+        src/game/mappings/CommonMappings.cpp
 )
 
 get_target_property(GRPC_CPP_PLUGIN_EXE gRPC::grpc_cpp_plugin LOCATION)
