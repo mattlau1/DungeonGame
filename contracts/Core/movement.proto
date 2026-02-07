@@ -14,15 +14,15 @@ message SetMovementInputRequest {
 }
 
 message SetMovementInputResponse {
-  InputResult result = 1;
+  MovementInputStatusResult status_response = 1;
   dungeon_game.shared.Location authoritative_location = 2;
   optional string debug_message = 3;
 }
 
-enum InputResult {
-  INPUT_RESULT_UNSPECIFIED = 0;
-  INPUT_RESULT_OK = 1;
-  INPUT_RESULT_BLOCKED = 2;
-  INPUT_RESULT_INVALID_PLAYER = 3;
-  INPUT_RESULT_TOO_FAST = 4;
+enum MovementInputStatusResult {
+  MOVEMENT_INPUT_STATUS_RESULT_UNSPECIFIED = 0;
+  MOVEMENT_INPUT_STATUS_RESULT_OK = 1;
+  MOVEMENT_INPUT_STATUS_RESULT_BLOCKED = 2;
+  MOVEMENT_INPUT_STATUS_RESULT_INVALID_PLAYER = 3;
+  MOVEMENT_INPUT_STATUS_RESULT_TOO_FAST = 4;
 }
