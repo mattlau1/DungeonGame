@@ -24,8 +24,7 @@ namespace DungeonGame {
 
     private:
         static std::string GetServerAddress();
+
         std::unique_ptr<GameProto::DungeonController::Stub> _stub;
     };
-
-
 }
