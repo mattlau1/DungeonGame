@@ -12,15 +12,15 @@ namespace DungeonGame::Mappings {
         };
     }
 
+    Models::MovementInputStatusResult
+    FromProto(const dungeon_game::core::MovementInputStatusResult statusResultProto) {
+        return static_cast<Models::MovementInputStatusResult>(statusResultProto);
+    }
+
     Models::SetMovementInputResponse FromProto(const dungeon_game::core::SetMovementInputResponse &inputResponseProto) {
         return Models::SetMovementInputResponse{
             FromProto(inputResponseProto.status_response()),
             FromProto(inputResponseProto.authoritative_location())
         };
-    }
-
-    Models::MovementInputStatusResult
-    FromProto(const dungeon_game::core::MovementInputStatusResult statusResultProto) {
-        return static_cast<Models::MovementInputStatusResult>(statusResultProto);
     }
 }
