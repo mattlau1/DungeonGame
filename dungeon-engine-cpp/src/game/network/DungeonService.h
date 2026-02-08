@@ -9,6 +9,7 @@ namespace DungeonGame::Network {
         }
 
         [[nodiscard]] Models::PlayerInfo SpawnPlayer() const;
+        [[nodiscard]] Models::PlayerInfo GetPlayerInfo(int playerId) const;
 
     private:
         DungeonConnection &_connection;
