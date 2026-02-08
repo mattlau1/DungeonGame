@@ -5,13 +5,9 @@
 
 .DS_Store
 Thumbs.db
-
-# Build Folders
-bin/
-obj/
-cmake-build-*/
-out/
-vcpkg_installed/
-
-# symlink
-dungeon-engine-cpp/contracts
+DungeonClient/DungeonClient.Application/cmake-build-*/
+DungeonClient/DungeonClient.Application/vcpkg_installed/
+DungeonServer/DungeonServer.Service/obj/
+DungeonServer/DungeonServer.Service/bin/
+DungeonServer/DungeonServer.Application/obj/
+DungeonClient/DungeonClient.Application/contracts
