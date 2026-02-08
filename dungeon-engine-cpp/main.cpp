@@ -1,6 +1,6 @@
 #include "main.h"
 #include "engine/graphics/Renderer.h"
-#include "game/network/DungeonClient.h"
+#include "game/network/DungeonConnection.h"
 
 int main() {
     // TODO: change default window size
@@ -9,7 +9,7 @@ int main() {
 
     DungeonGame::Engine::Graphics::Renderer renderer(screenWidth, screenHeight, "DungeonGame");
 
-    DungeonGame::DungeonClient dungeonClient{};
+    DungeonGame::Network::DungeonConnection dungeonClient{};
     dungeonClient.Connect();
 
     while (!renderer.ShouldClose()) {
