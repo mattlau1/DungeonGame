@@ -6,6 +6,7 @@
 .DS_Store
 Thumbs.db
 DungeonClient/DungeonClient.Application/cmake-build-*/
+DungeonClient/DungeonClient.Application/vcpkg_installed/
 DungeonServer/DungeonServer.Service/obj/
 DungeonServer/DungeonServer.Service/bin/
 DungeonServer/DungeonServer.Application/obj/
