@@ -10,7 +10,7 @@ namespace dungeon_game::core {
 namespace DungeonGame::Mappings {
     Models::SetMovementInputRequest FromProto(const dungeon_game::core::SetMovementInputRequest &inputRequestProto);
 
-    Models::MovementInputStatusResult FromProto(const dungeon_game::core::MovementInputStatusResult statusResultProto);
+    Models::MovementInputStatusResult FromProto(dungeon_game::core::MovementInputStatusResult statusResultProto);
 
     Models::SetMovementInputResponse FromProto(const dungeon_game::core::SetMovementInputResponse &inputResponseProto);
 }
