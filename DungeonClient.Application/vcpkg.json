@@ -1,0 +1,10 @@
+{
+  "name": "dungeon-engine",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "grpc",
+    "protobuf",
+    "raylib",
+    "glfw3"
+  ]
+}
