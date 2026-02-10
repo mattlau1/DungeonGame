@@ -12,5 +12,7 @@ public interface IRoomStore
 
     Task PublishRoomUpdateAsync(int roomId, RoomUpdateContext context, CancellationToken ct);
 
+    Task LinkRoomsAsync(int roomIdA, int roomIdB, Direction directionFromAToB, CancellationToken ct);
+
     IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int subscriberPlayerId, int roomId, CancellationToken ct);
 }

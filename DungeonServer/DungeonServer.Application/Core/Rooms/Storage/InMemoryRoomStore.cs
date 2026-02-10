@@ -119,6 +119,61 @@ public class InMemoryRoomStore : IRoomStore
         }
     }
 
+    public async Task LinkRoomsAsync(int roomIdA, int roomIdB, Direction directionFromAToB, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        
+        if (roomIdA == roomIdB) 
+        {
+            throw new ArgumentException("Cannot link a room to itself.");
+        }
+        
+        if (!_roomStates.TryGetValue(roomIdA, out var roomA))
+        {
+            throw new KeyNotFoundException($"Room Id {roomIdA} does not exist.");
+        }
+
+        if (!_roomStates.TryGetValue(roomIdB, out var roomB))
+        {
+            throw new KeyNotFoundException($"Room Id {roomIdB} does not exist.");
+        }
+
+        var directionFromBToA = directionFromAToB switch
+        {
+            Direction.North => Direction.South,
+            Direction.South => Direction.North,
+            Direction.East => Direction.West,
+            Direction.West => Direction.East,
+            _ => throw new ArgumentOutOfRangeException(nameof(directionFromAToB))
+        };
+
+        // To avoid deadlocks when locking two rooms, always lock the one with the smaller ID first.
+        LockableRoomState first = roomIdA < roomIdB ? roomA : roomB;
+        LockableRoomState second = roomIdA < roomIdB ? roomB : roomA;
+
+        await first.Gate.WaitAsync(ct);
+        try
+        {
+            await second.Gate.WaitAsync(ct);
+            try
+            {
+                roomA.RoomState.Exits[directionFromAToB] = roomIdB;
+                roomB.RoomState.Exits[directionFromBToA] = roomIdA;
+
+                _subscriptionRegistry.PublishUpdate(roomIdA, RoomStateSnapshot.From(roomA.RoomState), RoomUpdateContext.Broadcast());
+                _subscriptionRegistry.PublishUpdate(roomIdB, RoomStateSnapshot.From(roomB.RoomState), RoomUpdateContext.Broadcast());
+            }
+            finally
+            {
+                second.Gate.Release();
+            }
+        }
+        finally
+        {
+            first.Gate.Release();
+        }
+    }
+
     public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(
         int subscriberPlayerId,
         int roomId,

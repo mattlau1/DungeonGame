@@ -11,6 +11,8 @@ public class RoomState
     public int Height { get; set; }
 
     public HashSet<int> PlayerIds { get; set; } = [];
+
+    public Dictionary<Direction, int> Exits { get; set; } = [];
     
     public RoomState(RoomType roomType, int width, int height)
     {
