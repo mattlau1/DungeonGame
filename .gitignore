@@ -11,3 +11,5 @@ DungeonServer/DungeonServer.Service/obj/
 DungeonServer/DungeonServer.Service/bin/
 DungeonServer/DungeonServer.Application/obj/
 DungeonClient/DungeonClient.Application/contracts
+DungeonServer/DungeonServer.Application.Tests/bin/
+DungeonServer/DungeonServer.Application.Tests/obj/
