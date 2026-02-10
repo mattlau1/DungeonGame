@@ -147,7 +147,7 @@ public class InMemoryRoomStore : IRoomStore
             _ => throw new ArgumentOutOfRangeException(nameof(directionFromAToB))
         };
 
-        // To avoid deadlocks when locking two rooms, always lock the one with the smaller ID first.
+        // Always lock the one with the smaller ID first to avoid deadlocks
         LockableRoomState first = roomIdA < roomIdB ? roomA : roomB;
         LockableRoomState second = roomIdA < roomIdB ? roomB : roomA;
 
