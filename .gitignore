@@ -13,3 +13,4 @@ DungeonServer/DungeonServer.Application/obj/
 DungeonClient/DungeonClient.Application/contracts
 DungeonServer/DungeonServer.Application.Tests/bin/
 DungeonServer/DungeonServer.Application.Tests/obj/
+DungeonServer/DungeonServer.Application/bin/
