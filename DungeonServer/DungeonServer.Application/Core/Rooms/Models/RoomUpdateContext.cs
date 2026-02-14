@@ -9,7 +9,7 @@ public sealed record RoomUpdateContext
     public static RoomUpdateContext Broadcast() => new();
 
     /// <summary>
-    /// Creates a context that excludes a specific player from receivi  ng this update as a notification.
+    /// Creates a context that excludes a specific player from receiving this update as a notification.
     /// This is typically used when a player triggers their own action (like movement) to prevent
     /// redundant self-notification. The excluded player will still receive the initial room state
     /// snapshot when subscribing, just not subsequent updates they trigger themselves.
