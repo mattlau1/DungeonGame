@@ -14,30 +14,12 @@ namespace DungeonServer.Application.Tests.Dungeon;
 
 public static class DungeonControllerTests
 {
-    private record ControllerComponents(
-        DungeonController Controller,
-        IRoomStore RoomStore,
-        IPlayerStore PlayerStore,
-        RoomSubscriptionRegistry Registry);
-
-    private static ControllerComponents CreateController()
-    {
-        var playerStore = new InMemoryPlayerStore();
-        var registry = new RoomSubscriptionRegistry(playerStore);
-        var roomStore = new InMemoryRoomStore(registry);
-        var movementManager = new MovementManager(playerStore);
-        var architect = new DungeonArchitect(roomStore);
-        var playerManager = new PlayerManager(architect, playerStore, roomStore);
-        var controller = new DungeonController(playerManager, roomStore, playerStore, movementManager);
-        return new ControllerComponents(controller, roomStore, playerStore, registry);
-    }
-
     public class SpawnPlayerAsync
     {
         [Fact]
         public async Task ReturnsValidPlayerInfoResult()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult result = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             Assert.NotNull(result);
@@ -49,7 +31,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task PlayerIsStoredInternally()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult result = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             PlayerInfoResult playerInfo =
@@ -64,7 +46,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task CreatesRoomWhenNoneExists()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult result = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             await Task.Delay(100);
@@ -78,7 +60,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task MultipleSpawns_GenerateUniquePlayerIds()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult result1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult result2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
@@ -88,7 +70,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task SecondPlayerJoinsSameRoom()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult result1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult result2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
@@ -106,7 +88,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task PlayerSpawnsAtCenterOfRoom()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult result = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             await Task.Delay(100);
@@ -123,7 +105,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task ThreePlayers_AllJoinSameRoom()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult result1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult result2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult result3 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
@@ -144,7 +126,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task RespectsCancellationToken()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
             using var cts = new CancellationTokenSource();
             await cts.CancelAsync();
@@ -159,7 +141,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task ReturnsExistingPlayerInfo()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             PlayerInfoResult info =
@@ -175,7 +157,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task ThrowsForNonExistentPlayer()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
             await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 deps.Controller.GetPlayerInfoAsync(999, CancellationToken.None));
@@ -184,7 +166,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task ReflectsUpdatedLocation()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult initialInfo =
                 await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
@@ -205,19 +187,19 @@ public static class DungeonControllerTests
         [Fact]
         public async Task ValidMovement_ReturnsOk()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             MovementInputResponse response =
                 await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
 
-            Assert.Equal(MovementRequestStatus.Ok, response.status);
+            Assert.Equal(MovementRequestStatus.Ok, response.Status);
         }
 
         [Fact]
         public async Task UpdatesPlayerLocation()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult initialInfo =
                 await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
@@ -234,19 +216,19 @@ public static class DungeonControllerTests
         [Fact]
         public async Task MovementExceedingSpeedLimit_ReturnsTooFast()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             MovementInputResponse response =
                 await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 100f, 0f, CancellationToken.None);
 
-            Assert.Equal(MovementRequestStatus.TooFast, response.status);
+            Assert.Equal(MovementRequestStatus.TooFast, response.Status);
         }
 
         [Fact]
         public async Task TooFastMovement_DoesNotUpdateLocation()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult initialInfo =
                 await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
@@ -263,7 +245,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task ThrowsForNonExistentPlayer()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
             await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 deps.Controller.SetMovementInputAsync(999, 1f, 0f, CancellationToken.None));
@@ -272,7 +254,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task MultipleMovements_EachUpdatesLocation()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
@@ -292,7 +274,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task CanSubscribeAfterSpawning()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
@@ -319,7 +301,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task ReceivesRoomUpdatesAfterSubscribing()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             int roomId = player1.RoomId;
 
@@ -355,7 +337,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task MultipleSubscribers_AllReceiveUpdates()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             int roomId = player1.RoomId;
@@ -412,7 +394,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task PlayerMovement_UpdateReceivedByOtherPlayer()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             int roomId = player1.RoomId;
@@ -449,7 +431,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task Cancellation_StopsReceiving()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             int roomId = player.RoomId;
 
@@ -498,7 +480,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task InvalidRoomId_NoEmissions()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
@@ -527,7 +509,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task InvalidPlayerId_NoEmissions()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             int roomId = player.RoomId;
 
@@ -556,7 +538,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task ReceivesInitialSnapshotEvenIfLastUpdateExcludedThem()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             int roomId = player.RoomId;
 
@@ -598,7 +580,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task PlayerMoves_ExcludedFromOwnUpdateButOtherPlayerReceivesIt()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             int roomId = player1.RoomId;
@@ -633,7 +615,7 @@ public static class DungeonControllerTests
             await subscriptionTask;
 
             // Player 2 should receive the initial snapshot and the movement update from player 1
-            Assert.Equal(MovementRequestStatus.Ok, moveResult.status);
+            Assert.Equal(MovementRequestStatus.Ok, moveResult.Status);
             Assert.True(player2Snapshots.Count >= 2);
         }
     }
@@ -643,7 +625,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task TwoPlayersSpawnAndSeeEachOther()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             int roomId = player1.RoomId;
@@ -684,7 +666,7 @@ public static class DungeonControllerTests
         [Fact]
         public async Task PlayerMoves_OtherPlayerReceivesUpdate()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             int roomId = player1.RoomId;
@@ -720,14 +702,14 @@ public static class DungeonControllerTests
 
             await subscriptionTask;
 
-            Assert.Equal(MovementRequestStatus.Ok, moveResult.status);
+            Assert.Equal(MovementRequestStatus.Ok, moveResult.Status);
             Assert.True(player1Snapshots.Count >= 1);
         }
 
         [Fact]
         public async Task ThreePlayers_AllInSameRoom()
         {
-            ControllerComponents deps = CreateController();
+            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
             PlayerInfoResult player3 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);

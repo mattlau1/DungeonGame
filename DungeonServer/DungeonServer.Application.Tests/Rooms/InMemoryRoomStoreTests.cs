@@ -1,6 +1,5 @@
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
-using DungeonServer.Application.Core.Player.Storage;
 using Xunit;
 
 namespace DungeonServer.Application.Tests.Rooms;
@@ -15,12 +14,10 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task CreateRoomAsync_AssignsId_AndReturnsSnapshot()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var store = new InMemoryRoomStore(subscriptionRegistry);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
         RoomState room = GenerateNewRoom();
-        RoomStateSnapshot snapshot = await store.CreateRoomAsync(room, CancellationToken.None);
+        RoomStateSnapshot snapshot = await deps.RoomStore.CreateRoomAsync(room, CancellationToken.None);
 
         Assert.True(snapshot.RoomId > 0);
         Assert.Equal(RoomType.Combat, snapshot.RoomType);
@@ -31,12 +28,10 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task CreateRoomAsync_MultipleRooms_GeneratesUniqueIds()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var store = new InMemoryRoomStore(subscriptionRegistry);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        RoomStateSnapshot a = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
-        RoomStateSnapshot b = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
+        RoomStateSnapshot a = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
+        RoomStateSnapshot b = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
         Assert.NotEqual(a.RoomId, b.RoomId);
     }
@@ -44,25 +39,20 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task CreateRoomAsync_ThrowsIfRoomIdIsNotZero()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var store = new InMemoryRoomStore(subscriptionRegistry);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
         RoomState room = GenerateNewRoom();
         room.RoomId = 123;
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
-            store.CreateRoomAsync(room, CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentException>(() => deps.RoomStore.CreateRoomAsync(room, CancellationToken.None));
     }
 
     [Fact]
     public async Task GetRoomAsync_ReturnsNull_WhenRoomDoesNotExist()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var store = new InMemoryRoomStore(subscriptionRegistry);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        RoomStateSnapshot? snapshot = await store.GetRoomAsync(roomId: 999, CancellationToken.None);
+        RoomStateSnapshot? snapshot = await deps.RoomStore.GetRoomAsync(roomId: 999, CancellationToken.None);
 
         Assert.Null(snapshot);
     }
@@ -70,24 +60,23 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task UpdateRoomAsync_Throws_WhenRoomDoesNotExist()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var store = new InMemoryRoomStore(subscriptionRegistry);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            store.UpdateRoomAsync(999, _ => { }, RoomUpdateContext.Broadcast(), CancellationToken.None));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => deps.RoomStore.UpdateRoomAsync(
+            999,
+            _ => { },
+            RoomUpdateContext.Broadcast(),
+            CancellationToken.None));
     }
 
     [Fact]
     public async Task UpdateRoomAsync_MutatesState_AndReturnsUpdatedSnapshot()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var store = new InMemoryRoomStore(subscriptionRegistry);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        RoomStateSnapshot created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
+        RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
-        RoomStateSnapshot updated = await store.UpdateRoomAsync(
+        RoomStateSnapshot updated = await deps.RoomStore.UpdateRoomAsync(
             created.RoomId,
             state =>
             {
@@ -105,30 +94,26 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task CreateRoomAsync_RespectsCancellationToken()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var store = new InMemoryRoomStore(subscriptionRegistry);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            store.CreateRoomAsync(GenerateNewRoom(), cts.Token));
+            deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), cts.Token));
     }
 
     [Fact]
     public async Task UpdateRoomAsync_RespectsCancellationTokenWhileWaiting()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var store = new InMemoryRoomStore(subscriptionRegistry);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        RoomStateSnapshot created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
+        RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
         // Hold the gate with one update; cancel another update while it waits.
         using var gateHeld = new ManualResetEventSlim(false);
 
-        Task<RoomStateSnapshot> holder = Task.Run(() => store.UpdateRoomAsync(
+        Task<RoomStateSnapshot> holder = Task.Run(() => deps.RoomStore.UpdateRoomAsync(
             created.RoomId,
             _ =>
             {
@@ -144,7 +129,7 @@ public sealed class InMemoryRoomStoreTests
         cts.CancelAfter(TimeSpan.FromMilliseconds(25));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            store.UpdateRoomAsync(created.RoomId, _ => { }, RoomUpdateContext.Broadcast(), cts.Token));
+            deps.RoomStore.UpdateRoomAsync(created.RoomId, _ => { }, RoomUpdateContext.Broadcast(), cts.Token));
 
         await holder;
     }
@@ -152,21 +137,21 @@ public sealed class InMemoryRoomStoreTests
     [Fact]
     public async Task UpdateRoomAsync_IsAtomic_PerRoom_NoLostUpdates()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var store = new InMemoryRoomStore(subscriptionRegistry);
-        RoomStateSnapshot created = await store.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
+
+        RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
         const int updates = 200;
 
-        Task<RoomStateSnapshot>[] tasks = Enumerable.Range(0, updates)
-            .Select(_ => store.UpdateRoomAsync(created.RoomId, s => s.Width += 1, RoomUpdateContext.Broadcast(),
-                CancellationToken.None))
-            .ToArray();
+        Task<RoomStateSnapshot>[] tasks = Enumerable.Range(0, updates).Select(_ => deps.RoomStore.UpdateRoomAsync(
+            created.RoomId,
+            s => s.Width += 1,
+            RoomUpdateContext.Broadcast(),
+            CancellationToken.None)).ToArray();
 
         await Task.WhenAll(tasks);
 
-        RoomStateSnapshot? snapshot = await store.GetRoomAsync(created.RoomId, CancellationToken.None);
+        RoomStateSnapshot? snapshot = await deps.RoomStore.GetRoomAsync(created.RoomId, CancellationToken.None);
         Assert.NotNull(snapshot);
         Assert.Equal(10 + updates, snapshot!.Width);
     }

@@ -1,13 +1,8 @@
 using DungeonServer.Application.Core.Dungeon.Controllers;
-using DungeonServer.Application.Core.Movement.Controllers;
 using DungeonServer.Application.Core.Player.Contracts;
-using DungeonServer.Application.Core.Player.Controllers;
 using DungeonServer.Application.Core.Player.Models;
-using DungeonServer.Application.Core.Player.Storage;
-using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
-using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Shared;
 using Xunit;
 
@@ -18,23 +13,19 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_CanCreateSubscription()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var movementManager = new MovementManager(playerStore);
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
-        var architect = new DungeonArchitect(roomStore);
-        var playerManager = new PlayerManager(architect, playerStore, roomStore);
-        var controller = new DungeonController(playerManager, roomStore, playerStore, movementManager);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult player = await controller.SpawnPlayerAsync(CancellationToken.None);
+        PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
         using var cts = new CancellationTokenSource();
 
         Task subscribeTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snapshot in controller.SubscribeRoomAsync(player.PlayerInfo.Id,
-                                   player.PlayerInfo.RoomId, cts.Token))
+                await foreach (RoomStateSnapshot snapshot in deps.Controller.SubscribeRoomAsync(
+                                   player.PlayerInfo.Id,
+                                   player.PlayerInfo.RoomId,
+                                   cts.Token))
                 {
                     break;
                 }
@@ -54,15 +45,9 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_EmitsOnRoomUpdate_ShouldReflectNewPlayer()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var movementManager = new MovementManager(playerStore);
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
-        var architect = new DungeonArchitect(roomStore);
-        var playerManager = new PlayerManager(architect, playerStore, roomStore);
-        var controller = new DungeonController(playerManager, roomStore, playerStore, movementManager);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult first = await controller.SpawnPlayerAsync(CancellationToken.None);
+        PlayerInfoResult first = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
         Location firstLocation = first.PlayerInfo.Location;
         int roomId = first.PlayerInfo.RoomId;
 
@@ -73,12 +58,13 @@ public class RoomSubscriptionTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in controller.SubscribeRoomAsync(first.PlayerInfo.Id, roomId,
+                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                                   first.PlayerInfo.Id,
+                                   roomId,
                                    cts.Token))
                 {
                     snapshots.Add(snap);
-                    if (snapshots.Count >= 1)
-                        break;
+                    if (snapshots.Count >= 1) break;
                 }
             }
             catch (OperationCanceledException)
@@ -86,9 +72,10 @@ public class RoomSubscriptionTests
             }
         });
 
-        var secondLocation = new DungeonServer.Application.Core.Shared.Location(firstLocation.X + 1, firstLocation.Y);
-        PlayerSnapshot second = await playerStore.CreatePlayerAsync(secondLocation, CancellationToken.None);
-        await roomStore.UpdateRoomAsync(roomId,
+        var secondLocation = new Location(firstLocation.X + 1, firstLocation.Y);
+        PlayerSnapshot second = await deps.PlayerStore.CreatePlayerAsync(secondLocation, CancellationToken.None);
+        await deps.RoomStore.UpdateRoomAsync(
+            roomId,
             r => r.PlayerIds.Add(second.PlayerId),
             RoomUpdateContext.Broadcast(),
             CancellationToken.None);
@@ -113,19 +100,13 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_InvalidIds_ReturnsNoEmissions()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var movementManager = new MovementManager(playerStore);
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
-        var architect = new DungeonArchitect(roomStore);
-        var playerManager = new PlayerManager(architect, playerStore, roomStore);
-        var controller = new DungeonController(playerManager, roomStore, playerStore, movementManager);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
         var emitted = false;
         try
         {
-            await foreach (RoomStateSnapshot _ in controller.SubscribeRoomAsync(-1, -1, cts.Token))
+            await foreach (RoomStateSnapshot _ in deps.Controller.SubscribeRoomAsync(-1, -1, cts.Token))
             {
                 emitted = true;
                 break;
@@ -141,18 +122,12 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_MultipleSubscribers_AllReceiveUpdates()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var movementManager = new MovementManager(playerStore);
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
-        var architect = new DungeonArchitect(roomStore);
-        var playerManager = new PlayerManager(architect, playerStore, roomStore);
-        var controller = new DungeonController(playerManager, roomStore, playerStore, movementManager);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult player1 = await controller.SpawnPlayerAsync(CancellationToken.None);
+        PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
         int roomId = player1.PlayerInfo.RoomId;
 
-        PlayerInfoResult player2 = await controller.SpawnPlayerAsync(CancellationToken.None);
+        PlayerInfoResult player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
@@ -161,12 +136,13 @@ public class RoomSubscriptionTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in controller.SubscribeRoomAsync(player1.PlayerInfo.Id, roomId,
+                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                                   player1.PlayerInfo.Id,
+                                   roomId,
                                    cts.Token))
                 {
                     snapshots1.Add(snap);
-                    if (snapshots1.Count >= 1)
-                        break;
+                    if (snapshots1.Count >= 1) break;
                 }
             }
             catch (OperationCanceledException)
@@ -179,12 +155,13 @@ public class RoomSubscriptionTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in controller.SubscribeRoomAsync(player2.PlayerInfo.Id, roomId,
+                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                                   player2.PlayerInfo.Id,
+                                   roomId,
                                    cts.Token))
                 {
                     snapshots2.Add(snap);
-                    if (snapshots2.Count >= 1)
-                        break;
+                    if (snapshots2.Count >= 1) break;
                 }
             }
             catch (OperationCanceledException)
@@ -194,7 +171,7 @@ public class RoomSubscriptionTests
 
         await Task.Delay(100);
 
-        await roomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
         await Task.Delay(200);
         await cts.CancelAsync();
@@ -208,14 +185,12 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_RoomStateChanges_ReflectedInSnapshots()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
         var room = new RoomState(RoomType.Combat, 10, 8);
-        RoomStateSnapshot createdRoom = await roomStore.CreateRoomAsync(room, CancellationToken.None);
+        RoomStateSnapshot createdRoom = await deps.RoomStore.CreateRoomAsync(room, CancellationToken.None);
 
-        var testPlayer1 = await playerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+        var testPlayer1 = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
@@ -224,8 +199,10 @@ public class RoomSubscriptionTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in roomStore.SubscribeRoomAsync(testPlayer1.PlayerId,
-                                   createdRoom.RoomId, cts.Token))
+                await foreach (RoomStateSnapshot snap in deps.RoomStore.SubscribeRoomAsync(
+                                   testPlayer1.PlayerId,
+                                   createdRoom.RoomId,
+                                   cts.Token))
                 {
                     snapshots.Add(snap);
                 }
@@ -237,13 +214,18 @@ public class RoomSubscriptionTests
 
         await Task.Delay(100);
 
-        await roomStore.PublishRoomUpdateAsync(createdRoom.RoomId, RoomUpdateContext.Broadcast(),
+        await deps.RoomStore.PublishRoomUpdateAsync(
+            createdRoom.RoomId,
+            RoomUpdateContext.Broadcast(),
             CancellationToken.None);
 
         await Task.Delay(50);
 
-        await roomStore.UpdateRoomAsync(createdRoom.RoomId, r => r.RoomType = RoomType.Boss,
-            RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await deps.RoomStore.UpdateRoomAsync(
+            createdRoom.RoomId,
+            r => r.RoomType = RoomType.Boss,
+            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
 
         await Task.Delay(100);
 
@@ -258,20 +240,14 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_Cancellation_StopsReceiving()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var movementManager = new MovementManager(playerStore);
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
-        var architect = new DungeonArchitect(roomStore);
-        var playerManager = new PlayerManager(architect, playerStore, roomStore);
-        var controller = new DungeonController(playerManager, roomStore, playerStore, movementManager);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult player = await controller.SpawnPlayerAsync(CancellationToken.None);
+        PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
         int roomId = player.PlayerInfo.RoomId;
 
         await Task.Delay(100);
 
-        await roomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
         await Task.Delay(100);
 
@@ -282,7 +258,9 @@ public class RoomSubscriptionTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in controller.SubscribeRoomAsync(player.PlayerInfo.Id, roomId,
+                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                                   player.PlayerInfo.Id,
+                                   roomId,
                                    cts.Token))
                 {
                     snapshots.Add(snap);
@@ -295,14 +273,14 @@ public class RoomSubscriptionTests
 
         await Task.Delay(100);
 
-        await roomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
         await Task.Delay(50);
         await cts.CancelAsync();
 
         await Task.Delay(100);
 
-        await roomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
         await Task.Delay(100);
         await task;
@@ -313,21 +291,17 @@ public class RoomSubscriptionTests
     [Fact]
     public async Task SubscribeRoomAsync_ReceivesInitialSnapshotEvenIfLastUpdateExcludedThem()
     {
-        var playerStore = new InMemoryPlayerStore();
-        var subscriptionRegistry = new RoomSubscriptionRegistry(playerStore);
-        var movementManager = new MovementManager(playerStore);
-        var roomStore = new InMemoryRoomStore(subscriptionRegistry);
-        var architect = new DungeonArchitect(roomStore);
-        var playerManager = new PlayerManager(architect, playerStore, roomStore);
-        var controller = new DungeonController(playerManager, roomStore, playerStore, movementManager);
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult player1 = await controller.SpawnPlayerAsync(CancellationToken.None);
+        PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
         int roomId = player1.PlayerInfo.RoomId;
 
         await Task.Delay(100);
 
         // Publish an update that excludes this player (simulating they triggered it)
-        await roomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.ExcludePlayer(player1.PlayerInfo.Id),
+        await deps.RoomStore.PublishRoomUpdateAsync(
+            roomId,
+            RoomUpdateContext.ExcludePlayer(player1.PlayerInfo.Id),
             CancellationToken.None);
 
         await Task.Delay(100);
@@ -339,7 +313,9 @@ public class RoomSubscriptionTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in controller.SubscribeRoomAsync(player1.PlayerInfo.Id, roomId,
+                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                                   player1.PlayerInfo.Id,
+                                   roomId,
                                    cts.Token))
                 {
                     snapshots.Add(snap);
