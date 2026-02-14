@@ -125,9 +125,7 @@ public class MovementManagerTests
             CancellationToken.None);
 
         Assert.Equal(MovementRequestStatus.Ok, resp.Status);
-
-        PlayerSnapshot? updatedPlayer = await playerStore.GetPlayerAsync(player.PlayerId, CancellationToken.None);
-        Assert.Equal(roomSnapshot2.RoomId, updatedPlayer!.RoomId);
+        Assert.Equal(roomSnapshot2.RoomId, resp.RoomId);
     }
 
     [Fact]
@@ -166,8 +164,7 @@ public class MovementManagerTests
 
         Assert.Equal(MovementRequestStatus.Ok, resp.Status);
 
-        PlayerSnapshot? updatedPlayer = await playerStore.GetPlayerAsync(player.PlayerId, CancellationToken.None);
-        Assert.Equal(roomSnapshot2.RoomId, updatedPlayer!.RoomId);
+        Assert.Equal(roomSnapshot2.RoomId, resp.RoomId);
     }
 
     [Fact]
@@ -206,8 +203,7 @@ public class MovementManagerTests
 
         Assert.Equal(MovementRequestStatus.Ok, resp.Status);
 
-        PlayerSnapshot? updatedPlayer = await playerStore.GetPlayerAsync(player.PlayerId, CancellationToken.None);
-        Assert.Equal(roomSnapshot2.RoomId, updatedPlayer!.RoomId);
+        Assert.Equal(roomSnapshot2.RoomId, resp.RoomId);
     }
 
     [Fact]
@@ -246,8 +242,7 @@ public class MovementManagerTests
 
         Assert.Equal(MovementRequestStatus.Ok, resp.Status);
 
-        PlayerSnapshot? updatedPlayer = await playerStore.GetPlayerAsync(player.PlayerId, CancellationToken.None);
-        Assert.Equal(roomSnapshot2.RoomId, updatedPlayer!.RoomId);
+        Assert.Equal(roomSnapshot2.RoomId, resp.RoomId);
     }
 
     [Fact]
@@ -349,10 +344,9 @@ public class MovementManagerTests
             CancellationToken.None);
 
         var requested = new Location(11f, 5f);
-        await manager.SetMovementInput(new MovementInputRequest(player.PlayerId, requested), CancellationToken.None);
+        MovementInputResponse resp = await manager.SetMovementInput(new MovementInputRequest(player.PlayerId, requested), CancellationToken.None);
 
-        PlayerSnapshot? updatedPlayer = await playerStore.GetPlayerAsync(player.PlayerId, CancellationToken.None);
-        Assert.Equal(roomSnapshot2.RoomId, updatedPlayer!.RoomId);
+        Assert.Equal(roomSnapshot2.RoomId, resp.RoomId);
     }
 
     [Fact]

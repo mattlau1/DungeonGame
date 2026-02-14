@@ -16,7 +16,7 @@ message SetMovementInputRequest {
 message SetMovementInputResponse {
   MovementInputStatusResult status_response = 1;
   dungeon_game.shared.Location authoritative_location = 2;
-  optional string debug_message = 3;
+  int32 room_id = 3;
 }
 
 enum MovementInputStatusResult {

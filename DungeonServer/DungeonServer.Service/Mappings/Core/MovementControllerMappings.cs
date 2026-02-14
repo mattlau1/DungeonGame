@@ -20,7 +20,7 @@ public static class MovementControllerMappings
                 _ => MovementInputStatusResult.Unspecified
             },
             AuthoritativeLocation = appResponse.Location.ToProto(),
-            DebugMessage = appResponse.DebugMsg
+            RoomId = appResponse.RoomId
         };
     }
 }
