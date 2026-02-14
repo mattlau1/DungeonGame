@@ -24,26 +24,33 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         IServerStreamWriter<RoomSnapshot> responseStream,
         ServerCallContext context)
     {
-        IAsyncEnumerable<RoomStateSnapshot> appResponseStream =
-            _dungeonController.SubscribeRoomAsync(request.PlayerId, request.RoomId, context.CancellationToken);
-
-        await foreach (RoomStateSnapshot roomUpdate in appResponseStream)
+        try
         {
-            var grpcResponse = new RoomSnapshot { RoomId = roomUpdate.RoomId };
+            IAsyncEnumerable<RoomStateSnapshot> appResponseStream = _dungeonController.SubscribeRoomAsync(
+                request.PlayerId,
+                request.RoomId,
+                context.CancellationToken);
 
-            // TODO: Add a way to batch these into 1 call
-            IEnumerable<Task<PlayerInfo>> getPlayerInfoTasks = roomUpdate.PlayerIds
-                .Select(async playerId =>
+            await foreach (RoomStateSnapshot roomUpdate in appResponseStream)
+            {
+                var grpcResponse = new RoomSnapshot { RoomId = roomUpdate.RoomId };
+
+                // TODO: Add a way to batch these into 1 call
+                IEnumerable<Task<PlayerInfo>> getPlayerInfoTasks = roomUpdate.PlayerIds.Select(async playerId =>
                 {
                     PlayerInfoResult player =
                         await _dungeonController.GetPlayerInfoAsync(playerId, context.CancellationToken);
                     return player.ToProto();
                 });
 
-            PlayerInfo[] grpcPlayers = await Task.WhenAll(getPlayerInfoTasks);
-            grpcResponse.Players.AddRange(grpcPlayers);
+                PlayerInfo[] grpcPlayers = await Task.WhenAll(getPlayerInfoTasks);
+                grpcResponse.Players.AddRange(grpcPlayers);
 
-            await responseStream.WriteAsync(grpcResponse);
+                await responseStream.WriteAsync(grpcResponse);
+            }
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 
@@ -52,22 +59,35 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         IServerStreamWriter<SetMovementInputResponse> responseStream,
         ServerCallContext context)
     {
-        while (await requestStream.MoveNext())
+        try
         {
-            SetMovementInputRequest request = requestStream.Current;
+            while (await requestStream.MoveNext())
+            {
+                SetMovementInputRequest request = requestStream.Current;
 
-            MovementInputResponse appResponse =
-                await _dungeonController.SetMovementInputAsync(request.PlayerId, request.InputX, request.InputY,
+                MovementInputResponse appResponse = await _dungeonController.SetMovementInputAsync(
+                    request.PlayerId,
+                    request.InputX,
+                    request.InputY,
                     context.CancellationToken);
 
-            SetMovementInputResponse grpcResponse = appResponse.ToProto();
+                SetMovementInputResponse grpcResponse = appResponse.ToProto();
 
-            await responseStream.WriteAsync(grpcResponse);
+                await responseStream.WriteAsync(grpcResponse);
 
-            if (context.CancellationToken.IsCancellationRequested)
-            {
-                break;
+                if (context.CancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // Normal disconnection
+        }
+        catch (IOException)
+        {
+            // Client reset the stream abruptly
         }
     }
 
