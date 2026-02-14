@@ -3,4 +3,4 @@ using DungeonServer.Application.Core.Shared;
 
 namespace DungeonServer.Application.Core.Movement.Contracts;
 
-public record MovementInputResponse(MovementRequestStatus status, Location location, string debugMsg = "");
+public record MovementInputResponse(MovementRequestStatus Status, Location Location, string DebugMsg = "");

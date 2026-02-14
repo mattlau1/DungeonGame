@@ -11,7 +11,7 @@ public static class MovementControllerMappings
     {
         return new SetMovementInputResponse
         {
-            StatusResponse = appResponse.status switch
+            StatusResponse = appResponse.Status switch
             {
                 MovementRequestStatus.Ok => MovementInputStatusResult.Ok,
                 MovementRequestStatus.Blocked => MovementInputStatusResult.Blocked,
@@ -19,8 +19,8 @@ public static class MovementControllerMappings
                 MovementRequestStatus.InvalidPlayer => MovementInputStatusResult.InvalidPlayer,
                 _ => MovementInputStatusResult.Unspecified
             },
-            AuthoritativeLocation = appResponse.location.ToProto(),
-            DebugMessage = appResponse.debugMsg
+            AuthoritativeLocation = appResponse.Location.ToProto(),
+            DebugMessage = appResponse.DebugMsg
         };
     }
 }
