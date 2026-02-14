@@ -14,5 +14,7 @@ public interface IRoomStore
 
     Task LinkRoomsAsync(int roomIdA, int roomIdB, Direction directionFromAToB, CancellationToken ct);
 
+    Task SwapRoomsAsync(int playerId, int fromRoomId, int toRoomId, CancellationToken ct);
+
     IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int subscriberPlayerId, int roomId, CancellationToken ct);
 }

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using DungeonServer.Application.Core.Rooms.Models;
+using DungeonServer.Application.Core.Shared;
 
 namespace DungeonServer.Application.Core.Rooms.Storage;
 
@@ -98,6 +99,9 @@ public class InMemoryRoomStore : IRoomStore
         }
     }
 
+    /// <summary>
+    /// Tell subscribers that an update has occurred within the given room.
+    /// </summary>
     public async Task PublishRoomUpdateAsync(int roomId, RoomUpdateContext context, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -122,30 +126,61 @@ public class InMemoryRoomStore : IRoomStore
     public async Task LinkRoomsAsync(int roomIdA, int roomIdB, Direction directionFromAToB, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        
-        if (roomIdA == roomIdB) 
+
+        if (roomIdA == roomIdB)
         {
             throw new ArgumentException("Cannot link a room to itself.");
         }
-        
-        if (!_roomStates.TryGetValue(roomIdA, out var roomA))
+
+        await SafeUpdateRoomStates(
+            roomIdA,
+            roomIdB,
+            (roomA, roomB) =>
+            {
+                roomA.RoomState.Exits[directionFromAToB] = roomIdB;
+                roomB.RoomState.Exits[Helpers.GetOppositeDirection(directionFromAToB)] = roomIdA;
+            },
+            ct);
+    }
+
+    public async Task SwapRoomsAsync(int playerId, int fromRoomId, int toRoomId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        await SafeUpdateRoomStates(
+            fromRoomId,
+            toRoomId,
+            (roomA, roomB) =>
+            {
+                roomA.RoomState.PlayerIds.Remove(playerId);
+                roomB.RoomState.PlayerIds.Add(playerId);
+            },
+            ct);
+    }
+
+    public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(
+        int subscriberPlayerId,
+        int roomId,
+        CancellationToken ct)
+    {
+        return _subscriptionRegistry.SubscribeAsync(subscriberPlayerId, roomId, ct);
+    }
+
+    private async Task SafeUpdateRoomStates(
+        int roomIdA,
+        int roomIdB,
+        Action<LockableRoomState, LockableRoomState> update,
+        CancellationToken ct)
+    {
+        if (!_roomStates.TryGetValue(roomIdA, out LockableRoomState? roomA))
         {
             throw new KeyNotFoundException($"Room Id {roomIdA} does not exist.");
         }
 
-        if (!_roomStates.TryGetValue(roomIdB, out var roomB))
+        if (!_roomStates.TryGetValue(roomIdB, out LockableRoomState? roomB))
         {
             throw new KeyNotFoundException($"Room Id {roomIdB} does not exist.");
         }
-
-        var directionFromBToA = directionFromAToB switch
-        {
-            Direction.North => Direction.South,
-            Direction.South => Direction.North,
-            Direction.East => Direction.West,
-            Direction.West => Direction.East,
-            _ => throw new ArgumentOutOfRangeException(nameof(directionFromAToB))
-        };
 
         // Always lock the one with the smaller ID first to avoid deadlocks
         LockableRoomState first = roomIdA < roomIdB ? roomA : roomB;
@@ -157,11 +192,16 @@ public class InMemoryRoomStore : IRoomStore
             await second.Gate.WaitAsync(ct);
             try
             {
-                roomA.RoomState.Exits[directionFromAToB] = roomIdB;
-                roomB.RoomState.Exits[directionFromBToA] = roomIdA;
+                update(roomA, roomB);
 
-                _subscriptionRegistry.PublishUpdate(roomIdA, RoomStateSnapshot.From(roomA.RoomState), RoomUpdateContext.Broadcast());
-                _subscriptionRegistry.PublishUpdate(roomIdB, RoomStateSnapshot.From(roomB.RoomState), RoomUpdateContext.Broadcast());
+                _subscriptionRegistry.PublishUpdate(
+                    roomIdA,
+                    RoomStateSnapshot.From(roomA.RoomState),
+                    RoomUpdateContext.Broadcast());
+                _subscriptionRegistry.PublishUpdate(
+                    roomIdB,
+                    RoomStateSnapshot.From(roomB.RoomState),
+                    RoomUpdateContext.Broadcast());
             }
             finally
             {
@@ -172,13 +212,5 @@ public class InMemoryRoomStore : IRoomStore
         {
             first.Gate.Release();
         }
-    }
-
-    public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(
-        int subscriberPlayerId,
-        int roomId,
-        CancellationToken ct)
-    {
-        return _subscriptionRegistry.SubscribeAsync(subscriberPlayerId, roomId, ct);
     }
 }

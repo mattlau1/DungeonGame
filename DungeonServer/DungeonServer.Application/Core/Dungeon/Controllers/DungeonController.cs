@@ -13,7 +13,6 @@ public sealed class DungeonController : IDungeonController
 {
     private readonly IPlayerManager _playerManager;
     private readonly IRoomStore _roomStore;
-
     private readonly IPlayerStore _playerStore;
     private readonly IMovementManager _movementManager;
 
@@ -42,12 +41,7 @@ public sealed class DungeonController : IDungeonController
             throw new KeyNotFoundException($"Player Id {playerId} does not exist.");
         }
 
-        var playerInfo = new PlayerInfo
-        {
-            Id = player.PlayerId,
-            RoomId = player.RoomId,
-            Location = player.Location
-        };
+        var playerInfo = new PlayerInfo { Id = player.PlayerId, RoomId = player.RoomId, Location = player.Location };
 
         return new PlayerInfoResult(player.RoomId, playerInfo);
     }
@@ -62,16 +56,9 @@ public sealed class DungeonController : IDungeonController
         Location currLocation = currPlayer.PlayerInfo.Location;
 
         var destination = new Location(currLocation.X + inputX, currLocation.Y + inputY);
+        var moveRequest = new MovementInputRequest(playerId, destination);
 
-        var appRequest = new MovementInputRequest(playerId, destination);
-
-        MovementInputResponse appResponse =
-            await _movementManager.SetMovementInput(appRequest, ct);
-
-        // Publish room update excluding the moving player from receiving their own movement notification.
-        await _roomStore.PublishRoomUpdateAsync(currPlayer.RoomId, RoomUpdateContext.ExcludePlayer(playerId), ct);
-
-        return appResponse;
+        return await _movementManager.SetMovementInput(moveRequest, ct);
     }
 
     public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct)

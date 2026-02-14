@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+using DungeonServer.Application.Core.Shared;
 
 namespace DungeonServer.Application.Core.Rooms.Models;
 
@@ -54,5 +54,43 @@ public sealed record RoomStateSnapshot
             state.Height,
             new HashSet<int>(state.PlayerIds),
             new Dictionary<Direction, int>(state.Exits));
+    }
+
+    public Direction GetClosestWallDirection(Location location)
+    {
+        var distances = new[]
+        {
+            (Dir: Direction.North, Dist: Math.Abs(Height - location.Y)),
+            (Dir: Direction.South, Dist: Math.Abs(location.Y)),
+            (Dir: Direction.East,  Dist: Math.Abs(Width - location.X)),
+            (Dir: Direction.West,  Dist: Math.Abs(location.X))
+        };
+
+        return distances.MinBy(x => x.Dist).Dir;
+    }
+
+    public bool IsOutOfRoomBounds(Location location)
+    {
+        if (location.X < 0)
+        {
+            return true;
+        }
+
+        if (location.X >= Width)
+        {
+            return true;
+        }
+
+        if (location.Y < 0)
+        {
+            return true;
+        }
+
+        if (location.Y >= Height)
+        {
+            return true;
+        }
+
+        return false;
     }
 }
