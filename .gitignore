@@ -14,3 +14,5 @@ DungeonClient/DungeonClient.Application/contracts
 DungeonServer/DungeonServer.Application.Tests/bin/
 DungeonServer/DungeonServer.Application.Tests/obj/
 DungeonServer/DungeonServer.Application/bin/
+DungeonServer/DungeonServer.Benchmark/obj/
+DungeonServer/DungeonServer.Benchmark/bin/
