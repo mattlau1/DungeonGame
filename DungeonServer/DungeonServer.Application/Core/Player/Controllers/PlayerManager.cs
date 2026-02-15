@@ -89,4 +89,24 @@ public class PlayerManager : IPlayerManager
 
         return new PlayerInfoResult(roomId, playerInfo);
     }
+
+    public async Task DisconnectPlayerAsync(int playerId, CancellationToken ct)
+    {
+        PlayerSnapshot? player = await _playerStore.GetPlayerAsync(playerId, ct);
+        if (player == null)
+        {
+            return;
+        }
+
+        if (player.RoomId != RoomConstants.InvalidRoomId)
+        {
+            await _roomStore.UpdateRoomAsync(
+                player.RoomId,
+                r => r.PlayerIds.Remove(playerId),
+                RoomUpdateContext.Broadcast(),
+                ct);
+        }
+
+        await _playerStore.DeletePlayerAsync(playerId, ct);
+    }
 }

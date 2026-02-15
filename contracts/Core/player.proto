@@ -16,3 +16,7 @@ message PlayerInfo {
 message PlayerInfoRequest {
   int32 player_id = 1;
 }
+
+message DisconnectRequest {
+  int32 player_id = 1;
+}

@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package dungeon_game.core;
+
+message ServerStatusResponse {
+  int32 active_player_count = 1;
+}

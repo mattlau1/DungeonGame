@@ -87,4 +87,11 @@ public class InMemoryPlayerStore : IPlayerStore
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(_players.Values.Select(p => PlayerSnapshot.From(p.PlayerInfo)));
     }
+
+    public Task DeletePlayerAsync(int playerId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        _players.TryRemove(playerId, out _);
+        return Task.CompletedTask;
+    }
 }

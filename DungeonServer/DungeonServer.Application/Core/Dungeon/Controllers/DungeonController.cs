@@ -65,4 +65,15 @@ public sealed class DungeonController : IDungeonController
     {
         return _roomStore.SubscribeRoomAsync(playerId, roomId, ct);
     }
+
+    public async Task DisconnectPlayerAsync(int playerId, CancellationToken ct)
+    {
+        await _playerManager.DisconnectPlayerAsync(playerId, ct);
+    }
+
+    public async Task<int> GetActivePlayerCountAsync(CancellationToken ct)
+    {
+        IEnumerable<PlayerSnapshot> players = await _playerStore.GetAllPlayersAsync(ct);
+        return players.Count();
+    }
 }

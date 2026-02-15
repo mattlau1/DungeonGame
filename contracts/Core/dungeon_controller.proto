@@ -5,10 +5,14 @@ package dungeon_game.core;
 import "Core/movement.proto";
 import "Core/player.proto";
 import "Core/room.proto";
+import "Core/status.proto";
+import "google/protobuf/empty.proto";
 
 service DungeonController {
   rpc SubscribeRoom (SubscribeRoomRequest) returns (stream RoomSnapshot);
   rpc SetMovementInput (stream SetMovementInputRequest) returns (stream SetMovementInputResponse);
   rpc SpawnPlayer (SpawnRequest) returns (PlayerInfo);
   rpc GetPlayerInfo (PlayerInfoRequest) returns (PlayerInfo);
+  rpc DisconnectPlayer (DisconnectRequest) returns (google.protobuf.Empty);
+  rpc GetServerStatus (google.protobuf.Empty) returns (ServerStatusResponse);
 }

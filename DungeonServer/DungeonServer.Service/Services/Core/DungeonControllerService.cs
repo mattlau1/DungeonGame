@@ -36,21 +36,43 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
                 var grpcResponse = new RoomSnapshot { RoomId = roomUpdate.RoomId };
 
                 // TODO: Add a way to batch these into 1 call
-                IEnumerable<Task<PlayerInfo>> getPlayerInfoTasks = roomUpdate.PlayerIds.Select(async playerId =>
+                IEnumerable<Task<PlayerInfo?>> getPlayerInfoTasks = roomUpdate.PlayerIds.Select(async playerId =>
                 {
-                    PlayerInfoResult player =
-                        await _dungeonController.GetPlayerInfoAsync(playerId, context.CancellationToken);
-                    return player.ToProto();
+                    try 
+                    {
+                        var result = await _dungeonController.GetPlayerInfoAsync(playerId, context.CancellationToken);
+                        return result.ToProto();
+                    }
+                    catch (KeyNotFoundException)
+                    {
+                        // Player disconnected since the update was queued; skip them.
+                        return null; 
+                    }
                 });
 
-                PlayerInfo[] grpcPlayers = await Task.WhenAll(getPlayerInfoTasks);
-                grpcResponse.Players.AddRange(grpcPlayers);
+                PlayerInfo?[] grpcPlayers = await Task.WhenAll(getPlayerInfoTasks);
+                grpcResponse.Players.AddRange(grpcPlayers.Where(p => p != null));
 
                 await responseStream.WriteAsync(grpcResponse);
             }
         }
         catch (OperationCanceledException)
         {
+        }
+        catch (IOException)
+        {
+            // Client reset the stream abruptly (Common in benchmarking under load)
+        }
+        finally
+        {
+            try
+            {
+                await _dungeonController.DisconnectPlayerAsync(request.PlayerId, CancellationToken.None);
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
         }
     }
 
@@ -59,11 +81,13 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         IServerStreamWriter<SetMovementInputResponse> responseStream,
         ServerCallContext context)
     {
+        int? lastPlayerId = null;
         try
         {
             while (await requestStream.MoveNext())
             {
                 SetMovementInputRequest request = requestStream.Current;
+                lastPlayerId = request.PlayerId;
 
                 MovementInputResponse appResponse = await _dungeonController.SetMovementInputAsync(
                     request.PlayerId,
@@ -89,6 +113,20 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         {
             // Client reset the stream abruptly
         }
+        finally
+        {
+            if (lastPlayerId.HasValue)
+            {
+                try
+                {
+                    await _dungeonController.DisconnectPlayerAsync(lastPlayerId.Value, CancellationToken.None);
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+            }
+        }
     }
 
     public override async Task<PlayerInfo> SpawnPlayer(SpawnRequest request, ServerCallContext context)
@@ -102,5 +140,21 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         PlayerInfoResult result =
             await _dungeonController.GetPlayerInfoAsync(request.PlayerId, context.CancellationToken);
         return result.ToProto();
+    }
+
+    public override async Task<Google.Protobuf.WellKnownTypes.Empty> DisconnectPlayer(
+        DisconnectRequest request,
+        ServerCallContext context)
+    {
+        await _dungeonController.DisconnectPlayerAsync(request.PlayerId, context.CancellationToken);
+        return new Google.Protobuf.WellKnownTypes.Empty();
+    }
+
+    public override async Task<ServerStatusResponse> GetServerStatus(
+        Google.Protobuf.WellKnownTypes.Empty request,
+        ServerCallContext context)
+    {
+        int count = await _dungeonController.GetActivePlayerCountAsync(context.CancellationToken);
+        return new ServerStatusResponse { ActivePlayerCount = count };
     }
 }
