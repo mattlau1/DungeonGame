@@ -1,0 +1,10 @@
+services:
+  dungeon-server:
+    build:
+      context: .
+      dockerfile: DungeonServer/Dockerfile
+    ports:
+      - "5142:8080"
+      - "5143:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
