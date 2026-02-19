@@ -8,9 +8,14 @@ using DungeonServer.Application.Core.Rooms.Contracts;
 using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.External;
+using DungeonServer.Infrastructure.Persistence;
 using DungeonServer.Service.Services.Core;
+using Microsoft.EntityFrameworkCore;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+string? connectionString = builder.Configuration.GetConnectionString("DbConnection");
+builder.Services.AddDbContext<DungeonDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddGrpc();
 
