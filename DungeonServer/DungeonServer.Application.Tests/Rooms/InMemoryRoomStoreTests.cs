@@ -58,40 +58,6 @@ public sealed class InMemoryRoomStoreTests
     }
 
     [Fact]
-    public async Task UpdateRoomAsync_Throws_WhenRoomDoesNotExist()
-    {
-        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
-
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => deps.RoomStore.UpdateRoomAsync(
-            999,
-            _ => { },
-            RoomUpdateContext.Broadcast(),
-            CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task UpdateRoomAsync_MutatesState_AndReturnsUpdatedSnapshot()
-    {
-        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
-
-        RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
-
-        RoomStateSnapshot updated = await deps.RoomStore.UpdateRoomAsync(
-            created.RoomId,
-            state =>
-            {
-                state.Width = 42;
-                state.RoomType = RoomType.Boss;
-            },
-            RoomUpdateContext.Broadcast(),
-            CancellationToken.None);
-
-        Assert.Equal(created.RoomId, updated.RoomId);
-        Assert.Equal(42, updated.Width);
-        Assert.Equal(RoomType.Boss, updated.RoomType);
-    }
-
-    [Fact]
     public async Task CreateRoomAsync_RespectsCancellationToken()
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
@@ -104,55 +70,81 @@ public sealed class InMemoryRoomStoreTests
     }
 
     [Fact]
-    public async Task UpdateRoomAsync_RespectsCancellationTokenWhileWaiting()
+    public async Task AddPlayerToRoomAsync_Throws_WhenRoomDoesNotExist()
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
-
-        // Hold the gate with one update; cancel another update while it waits.
-        using var gateHeld = new ManualResetEventSlim(false);
-
-        Task<RoomStateSnapshot> holder = Task.Run(() => deps.RoomStore.UpdateRoomAsync(
-            created.RoomId,
-            _ =>
-            {
-                gateHeld.Set();
-                Thread.Sleep(250);
-            },
-            RoomUpdateContext.Broadcast(),
-            CancellationToken.None));
-
-        gateHeld.Wait();
-
-        using var cts = new CancellationTokenSource();
-        cts.CancelAfter(TimeSpan.FromMilliseconds(25));
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            deps.RoomStore.UpdateRoomAsync(created.RoomId, _ => { }, RoomUpdateContext.Broadcast(), cts.Token));
-
-        await holder;
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            deps.RoomStore.AddPlayerToRoomAsync(999, 1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task UpdateRoomAsync_IsAtomic_PerRoom_NoLostUpdates()
+    public async Task RemovePlayerFromRoomAsync_Throws_WhenRoomDoesNotExist()
+    {
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            deps.RoomStore.RemovePlayerFromRoomAsync(999, 1, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task AddPlayerToRoomAsync_AddsPlayerAndReturnsSnapshot()
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
         RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
-        const int updates = 200;
+        RoomStateSnapshot updated = await deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, 42, CancellationToken.None);
 
-        Task<RoomStateSnapshot>[] tasks = Enumerable.Range(0, updates).Select(_ => deps.RoomStore.UpdateRoomAsync(
-            created.RoomId,
-            s => s.Width += 1,
-            RoomUpdateContext.Broadcast(),
-            CancellationToken.None)).ToArray();
+        Assert.Equal(created.RoomId, updated.RoomId);
+        Assert.Contains(42, updated.PlayerIds);
+    }
+
+    [Fact]
+    public async Task RemovePlayerFromRoomAsync_RemovesPlayerAndReturnsSnapshot()
+    {
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
+
+        RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, 42, CancellationToken.None);
+
+        RoomStateSnapshot updated = await deps.RoomStore.RemovePlayerFromRoomAsync(created.RoomId, 42, CancellationToken.None);
+
+        Assert.Equal(created.RoomId, updated.RoomId);
+        Assert.DoesNotContain(42, updated.PlayerIds);
+    }
+
+    [Fact]
+    public async Task AddPlayerToRoomAsync_RespectsCancellationToken()
+    {
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
+
+        RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, 1, cts.Token));
+    }
+
+    [Fact]
+    public async Task AddPlayerToRoomAsync_IsAtomic_NoLostPlayers()
+    {
+        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
+
+        RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
+
+        const int playerCount = 200;
+
+        Task[] tasks = Enumerable.Range(0, playerCount)
+            .Select(i => deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, i, CancellationToken.None))
+            .ToArray();
 
         await Task.WhenAll(tasks);
 
         RoomStateSnapshot? snapshot = await deps.RoomStore.GetRoomAsync(created.RoomId, CancellationToken.None);
         Assert.NotNull(snapshot);
-        Assert.Equal(10 + updates, snapshot!.Width);
+        Assert.Equal(playerCount, snapshot!.PlayerIds.Count);
     }
 }

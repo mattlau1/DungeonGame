@@ -74,11 +74,7 @@ public class RoomSubscriptionTests
 
         var secondLocation = new Location(firstLocation.X + 1, firstLocation.Y);
         PlayerSnapshot second = await deps.PlayerStore.CreatePlayerAsync(secondLocation, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
-            roomId,
-            r => r.PlayerIds.Add(second.PlayerId),
-            RoomUpdateContext.Broadcast(),
-            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomId, second.PlayerId, CancellationToken.None);
 
         Task timeout = Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
         Task completed = await Task.WhenAny(enumerateTask, timeout);
@@ -180,61 +176,6 @@ public class RoomSubscriptionTests
 
         Assert.Single(snapshots1);
         Assert.Single(snapshots2);
-    }
-
-    [Fact]
-    public async Task SubscribeRoomAsync_RoomStateChanges_ReflectedInSnapshots()
-    {
-        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
-
-        var room = new RoomState(RoomType.Combat, 10, 8);
-        RoomStateSnapshot createdRoom = await deps.RoomStore.CreateRoomAsync(room, CancellationToken.None);
-
-        var testPlayer1 = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
-
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-
-        var snapshots = new List<RoomStateSnapshot>();
-        Task task = Task.Run(async () =>
-        {
-            try
-            {
-                await foreach (RoomStateSnapshot snap in deps.RoomStore.SubscribeRoomAsync(
-                                   testPlayer1.PlayerId,
-                                   createdRoom.RoomId,
-                                   cts.Token))
-                {
-                    snapshots.Add(snap);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-        });
-
-        await Task.Delay(100);
-
-        await deps.RoomStore.PublishRoomUpdateAsync(
-            createdRoom.RoomId,
-            RoomUpdateContext.Broadcast(),
-            CancellationToken.None);
-
-        await Task.Delay(50);
-
-        await deps.RoomStore.UpdateRoomAsync(
-            createdRoom.RoomId,
-            r => r.RoomType = RoomType.Boss,
-            RoomUpdateContext.Broadcast(),
-            CancellationToken.None);
-
-        await Task.Delay(100);
-
-        await cts.CancelAsync();
-
-        await task;
-
-        RoomStateSnapshot? bossSnapshot = snapshots.FirstOrDefault(s => s.RoomType == RoomType.Boss);
-        Assert.NotNull(bossSnapshot);
     }
 
     [Fact]

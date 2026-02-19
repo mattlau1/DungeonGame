@@ -23,14 +23,14 @@ public class MovementManagerTests
         var roomSnapshot = await deps.RoomStore.CreateRoomAsync(room, CancellationToken.None);
 
         PlayerSnapshot snapshot = await playerStore.CreatePlayerAsync(Location.Origin, CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             snapshot.PlayerId,
-            p => p.RoomId = roomSnapshot.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            snapshot.Location,
             roomSnapshot.RoomId,
-            r => r.PlayerIds.Add(snapshot.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot.RoomId,
+            snapshot.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(1f, 0f);
@@ -55,14 +55,14 @@ public class MovementManagerTests
         var roomSnapshot = await deps.RoomStore.CreateRoomAsync(room, CancellationToken.None);
 
         PlayerSnapshot snapshot = await playerStore.CreatePlayerAsync(Location.Origin, CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             snapshot.PlayerId,
-            p => p.RoomId = roomSnapshot.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            snapshot.Location,
             roomSnapshot.RoomId,
-            r => r.PlayerIds.Add(snapshot.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot.RoomId,
+            snapshot.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(100f, 0f);
@@ -109,14 +109,14 @@ public class MovementManagerTests
             CancellationToken.None);
 
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(11f, 5f);
@@ -147,14 +147,14 @@ public class MovementManagerTests
             CancellationToken.None);
 
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(0, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(-1f, 5f);
@@ -186,14 +186,14 @@ public class MovementManagerTests
             CancellationToken.None);
 
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(5, 9), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(5f, 11f);
@@ -225,14 +225,14 @@ public class MovementManagerTests
             CancellationToken.None);
 
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(5, 0), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(5f, -1f);
@@ -256,14 +256,14 @@ public class MovementManagerTests
         var roomSnapshot = await deps.RoomStore.CreateRoomAsync(room, CancellationToken.None);
 
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(11f, 5f);
@@ -293,14 +293,14 @@ public class MovementManagerTests
             CancellationToken.None);
 
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(11f, 5f);
@@ -333,14 +333,14 @@ public class MovementManagerTests
             CancellationToken.None);
 
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(11f, 5f);
@@ -368,14 +368,14 @@ public class MovementManagerTests
             CancellationToken.None);
 
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(11f, 5f);
@@ -404,14 +404,14 @@ public class MovementManagerTests
             CancellationToken.None);
 
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(11f, 5f);
@@ -441,14 +441,14 @@ public class MovementManagerTests
 
         float startY = 3.5f;
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(9, startY), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(11f, startY);
@@ -480,14 +480,14 @@ public class MovementManagerTests
 
         float startX = 4.5f;
         PlayerSnapshot player = await playerStore.CreatePlayerAsync(new Location(startX, 9), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(
+        await playerStore.UpdateLocationAsync(
             player.PlayerId,
-            p => p.RoomId = roomSnapshot1.RoomId,
-            CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(
+            player.Location,
             roomSnapshot1.RoomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
+            CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(
+            roomSnapshot1.RoomId,
+            player.PlayerId,
             CancellationToken.None);
 
         var requested = new Location(startX, 11f);
@@ -514,12 +514,12 @@ public class MovementManagerTests
         await deps.RoomStore.LinkRoomsAsync(roomSnapshot1.RoomId, roomSnapshot2.RoomId, Direction.East, CancellationToken.None);
         
         PlayerSnapshot movingPlayer = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(movingPlayer.PlayerId, p => p.RoomId = roomSnapshot1.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot1.RoomId, r => r.PlayerIds.Add(movingPlayer.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(movingPlayer.PlayerId, movingPlayer.Location, roomSnapshot1.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, movingPlayer.PlayerId, CancellationToken.None);
 
         PlayerSnapshot observerPlayer = await playerStore.CreatePlayerAsync(new Location(5, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(observerPlayer.PlayerId, p => p.RoomId = roomSnapshot1.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot1.RoomId, r => r.PlayerIds.Add(observerPlayer.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(observerPlayer.PlayerId, observerPlayer.Location, roomSnapshot1.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, observerPlayer.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         var oldRoomSnapshots = new List<RoomStateSnapshot>();
@@ -571,12 +571,12 @@ public class MovementManagerTests
         await deps.RoomStore.LinkRoomsAsync(roomSnapshot1.RoomId, roomSnapshot2.RoomId, Direction.East, CancellationToken.None);
         
         PlayerSnapshot movingPlayer = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(movingPlayer.PlayerId, p => p.RoomId = roomSnapshot1.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot1.RoomId, r => r.PlayerIds.Add(movingPlayer.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(movingPlayer.PlayerId, movingPlayer.Location, roomSnapshot1.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, movingPlayer.PlayerId, CancellationToken.None);
 
         PlayerSnapshot observerPlayer = await playerStore.CreatePlayerAsync(new Location(5, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(observerPlayer.PlayerId, p => p.RoomId = roomSnapshot2.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot2.RoomId, r => r.PlayerIds.Add(observerPlayer.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(observerPlayer.PlayerId, observerPlayer.Location, roomSnapshot2.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot2.RoomId, observerPlayer.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         var newRoomSnapshots = new List<RoomStateSnapshot>();
@@ -628,16 +628,16 @@ public class MovementManagerTests
         await deps.RoomStore.LinkRoomsAsync(roomSnapshot1.RoomId, roomSnapshot2.RoomId, Direction.East, CancellationToken.None);
         
         PlayerSnapshot movingPlayer = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(movingPlayer.PlayerId, p => p.RoomId = roomSnapshot1.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot1.RoomId, r => r.PlayerIds.Add(movingPlayer.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(movingPlayer.PlayerId, movingPlayer.Location, roomSnapshot1.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, movingPlayer.PlayerId, CancellationToken.None);
 
         PlayerSnapshot observerInOldRoom = await playerStore.CreatePlayerAsync(new Location(5, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(observerInOldRoom.PlayerId, p => p.RoomId = roomSnapshot1.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot1.RoomId, r => r.PlayerIds.Add(observerInOldRoom.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(observerInOldRoom.PlayerId, observerInOldRoom.Location, roomSnapshot1.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, observerInOldRoom.PlayerId, CancellationToken.None);
 
         PlayerSnapshot observerInNewRoom = await playerStore.CreatePlayerAsync(new Location(5, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(observerInNewRoom.PlayerId, p => p.RoomId = roomSnapshot2.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot2.RoomId, r => r.PlayerIds.Add(observerInNewRoom.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(observerInNewRoom.PlayerId, observerInNewRoom.Location, roomSnapshot2.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot2.RoomId, observerInNewRoom.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         var oldRoomSnapshots = new List<RoomStateSnapshot>();
@@ -709,12 +709,12 @@ public class MovementManagerTests
         await deps.RoomStore.LinkRoomsAsync(roomSnapshot1.RoomId, roomSnapshot2.RoomId, Direction.East, CancellationToken.None);
         
         PlayerSnapshot movingPlayer = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(movingPlayer.PlayerId, p => p.RoomId = roomSnapshot1.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot1.RoomId, r => r.PlayerIds.Add(movingPlayer.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(movingPlayer.PlayerId, movingPlayer.Location, roomSnapshot1.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, movingPlayer.PlayerId, CancellationToken.None);
 
         PlayerSnapshot observerPlayer = await playerStore.CreatePlayerAsync(new Location(5, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(observerPlayer.PlayerId, p => p.RoomId = roomSnapshot2.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot2.RoomId, r => r.PlayerIds.Add(observerPlayer.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(observerPlayer.PlayerId, observerPlayer.Location, roomSnapshot2.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot2.RoomId, observerPlayer.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         var room2Snapshots = new List<RoomStateSnapshot>();
@@ -766,8 +766,8 @@ public class MovementManagerTests
         await deps.RoomStore.LinkRoomsAsync(roomSnapshot1.RoomId, roomSnapshot2.RoomId, Direction.East, CancellationToken.None);
         
         PlayerSnapshot movingPlayer = await playerStore.CreatePlayerAsync(new Location(9, 5), CancellationToken.None);
-        await playerStore.UpdatePlayerAsync(movingPlayer.PlayerId, p => p.RoomId = roomSnapshot1.RoomId, CancellationToken.None);
-        await deps.RoomStore.UpdateRoomAsync(roomSnapshot1.RoomId, r => r.PlayerIds.Add(movingPlayer.PlayerId), RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await playerStore.UpdateLocationAsync(movingPlayer.PlayerId, movingPlayer.Location, roomSnapshot1.RoomId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, movingPlayer.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         var movingPlayerSnapshots = new List<RoomStateSnapshot>();

@@ -205,21 +205,11 @@ public class PlayerSpawningTests
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
         PlayerInfoResult result1 = await deps.PlayerManager.SpawnPlayerAsync(CancellationToken.None);
-        IEnumerable<PlayerSnapshot> allPlayers = await deps.PlayerStore.GetAllPlayersAsync(CancellationToken.None);
-
-        foreach (PlayerSnapshot player in allPlayers)
-        {
-            await deps.PlayerStore.UpdatePlayerAsync(player.PlayerId, p => p.RoomId = 0, CancellationToken.None);
-        }
 
         RoomStateSnapshot? room1 = await deps.RoomStore.GetRoomAsync(result1.RoomId, CancellationToken.None);
         if (room1 != null)
         {
-            await deps.RoomStore.UpdateRoomAsync(
-                room1.RoomId,
-                r => r.PlayerIds.Clear(),
-                RoomUpdateContext.Broadcast(),
-                CancellationToken.None);
+            await deps.RoomStore.RemovePlayerFromRoomAsync(room1.RoomId, result1.PlayerInfo.Id, CancellationToken.None);
         }
 
         PlayerInfoResult result2 = await deps.PlayerManager.SpawnPlayerAsync(CancellationToken.None);
@@ -236,15 +226,10 @@ public class PlayerSpawningTests
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
         PlayerInfoResult result1 = await deps.PlayerManager.SpawnPlayerAsync(CancellationToken.None);
 
-        await deps.PlayerStore.UpdatePlayerAsync(result1.PlayerInfo.Id, p => p.RoomId = 0, CancellationToken.None);
         RoomStateSnapshot? room1 = await deps.RoomStore.GetRoomAsync(result1.RoomId, CancellationToken.None);
         if (room1 != null)
         {
-            await deps.RoomStore.UpdateRoomAsync(
-                room1.RoomId,
-                r => r.PlayerIds.Remove(result1.PlayerInfo.Id),
-                RoomUpdateContext.Broadcast(),
-                CancellationToken.None);
+            await deps.RoomStore.RemovePlayerFromRoomAsync(room1.RoomId, result1.PlayerInfo.Id, CancellationToken.None);
         }
 
         PlayerInfoResult result2 = await deps.PlayerManager.SpawnPlayerAsync(CancellationToken.None);
