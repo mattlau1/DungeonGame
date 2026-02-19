@@ -56,13 +56,10 @@ public class MovementManager : IMovementManager
             await _roomStore.SwapRoomsAsync(moveRequest.PlayerId, player.RoomId, destinationRoomId, ct);
         }
 
-        await _playerStore.UpdatePlayerAsync(
+        await _playerStore.UpdateLocationAsync(
             moveRequest.PlayerId,
-            p =>
-            {
-                p.Location = destinationLocation;
-                p.RoomId = destinationRoomId;
-            },
+            destinationLocation,
+            destinationRoomId,
             ct);
 
         if (destinationRoomId == player.RoomId)

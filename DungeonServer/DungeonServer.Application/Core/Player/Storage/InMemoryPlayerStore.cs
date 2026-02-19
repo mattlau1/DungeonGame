@@ -38,9 +38,10 @@ public class InMemoryPlayerStore : IPlayerStore
         return Task.FromResult(PlayerSnapshot.From(entry.PlayerInfo));
     }
 
-    public async Task<PlayerSnapshot> UpdatePlayerAsync(
+    public async Task<PlayerSnapshot> UpdateLocationAsync(
         int playerId,
-        Action<PlayerInfo> updateAction,
+        Location location,
+        int roomId,
         CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -53,7 +54,8 @@ public class InMemoryPlayerStore : IPlayerStore
         await player.Gate.WaitAsync(ct);
         try
         {
-            updateAction(player.PlayerInfo);
+            player.PlayerInfo.Location = location;
+            player.PlayerInfo.RoomId = roomId;
             return PlayerSnapshot.From(player.PlayerInfo);
         }
         finally

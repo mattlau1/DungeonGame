@@ -6,7 +6,9 @@ public interface IRoomStore
 {
     Task<RoomStateSnapshot> CreateRoomAsync(RoomState room, CancellationToken ct);
 
-    Task<RoomStateSnapshot> UpdateRoomAsync(int roomId, Action<RoomState> updateAction, RoomUpdateContext context, CancellationToken ct);
+    Task<RoomStateSnapshot> AddPlayerToRoomAsync(int roomId, int playerId, CancellationToken ct);
+
+    Task<RoomStateSnapshot> RemovePlayerFromRoomAsync(int roomId, int playerId, CancellationToken ct);
 
     Task<RoomStateSnapshot?> GetRoomAsync(int roomId, CancellationToken ct);
 

@@ -52,11 +52,7 @@ public class InMemoryRoomStore : IRoomStore
         return Task.FromResult(snapshot);
     }
 
-    public async Task<RoomStateSnapshot> UpdateRoomAsync(
-        int roomId,
-        Action<RoomState> updateAction,
-        RoomUpdateContext context,
-        CancellationToken ct)
+    public async Task<RoomStateSnapshot> AddPlayerToRoomAsync(int roomId, int playerId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
@@ -68,9 +64,32 @@ public class InMemoryRoomStore : IRoomStore
         await room.Gate.WaitAsync(ct);
         try
         {
-            updateAction(room.RoomState);
+            room.RoomState.PlayerIds.Add(playerId);
             var snapshot = RoomStateSnapshot.From(room.RoomState);
-            _subscriptionRegistry.PublishUpdate(roomId, snapshot, context);
+            _subscriptionRegistry.PublishUpdate(roomId, snapshot, RoomUpdateContext.Broadcast());
+            return snapshot;
+        }
+        finally
+        {
+            room.Gate.Release();
+        }
+    }
+
+    public async Task<RoomStateSnapshot> RemovePlayerFromRoomAsync(int roomId, int playerId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        if (!_roomStates.TryGetValue(roomId, out LockableRoomState? room))
+        {
+            throw new KeyNotFoundException($"Room Id {roomId} does not exist.");
+        }
+
+        await room.Gate.WaitAsync(ct);
+        try
+        {
+            room.RoomState.PlayerIds.Remove(playerId);
+            var snapshot = RoomStateSnapshot.From(room.RoomState);
+            _subscriptionRegistry.PublishUpdate(roomId, snapshot, RoomUpdateContext.Broadcast());
             return snapshot;
         }
         finally

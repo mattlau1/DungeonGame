@@ -65,19 +65,12 @@ public class PlayerManager : IPlayerManager
     {
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(location, ct);
 
-        await _roomStore.UpdateRoomAsync(
-            roomId,
-            r => r.PlayerIds.Add(player.PlayerId),
-            RoomUpdateContext.Broadcast(),
-            ct);
+        await _roomStore.AddPlayerToRoomAsync(roomId, player.PlayerId, ct);
 
-        PlayerSnapshot updated = await _playerStore.UpdatePlayerAsync(
+        PlayerSnapshot updated = await _playerStore.UpdateLocationAsync(
             player.PlayerId,
-            info =>
-            {
-                info.RoomId = roomId;
-                info.Location = location;
-            },
+            location,
+            roomId,
             ct);
 
         var playerInfo = new PlayerInfo
@@ -100,11 +93,7 @@ public class PlayerManager : IPlayerManager
 
         if (player.RoomId != RoomConstants.InvalidRoomId)
         {
-            await _roomStore.UpdateRoomAsync(
-                player.RoomId,
-                r => r.PlayerIds.Remove(playerId),
-                RoomUpdateContext.Broadcast(),
-                ct);
+            await _roomStore.RemovePlayerFromRoomAsync(player.RoomId, playerId, ct);
         }
 
         await _playerStore.DeletePlayerAsync(playerId, ct);
