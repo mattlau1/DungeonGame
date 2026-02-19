@@ -8,7 +8,10 @@ using DungeonServer.Application.Core.Rooms.Contracts;
 using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.External;
+using DungeonServer.Infrastructure.Messaging.Rooms;
 using DungeonServer.Infrastructure.Persistence;
+using DungeonServer.Infrastructure.Persistence.InMemory.Player;
+using DungeonServer.Infrastructure.Persistence.InMemory.Rooms;
 using DungeonServer.Service.Services.Core;
 using Microsoft.EntityFrameworkCore;
 
