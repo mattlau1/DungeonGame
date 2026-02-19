@@ -1,0 +1,12 @@
+using DungeonServer.Application.Core.Rooms.Models;
+
+namespace DungeonServer.Infrastructure.Persistence.Entities;
+
+public class RoomExitEntity
+{
+    public int FromRoomId { get; set; }
+
+    public Direction ExitDirection { get; set; }
+
+    public int ToRoomId { get; set; }
+}
