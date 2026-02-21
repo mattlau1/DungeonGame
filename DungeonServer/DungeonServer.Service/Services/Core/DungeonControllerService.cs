@@ -35,23 +35,18 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
             {
                 var grpcResponse = new RoomSnapshot { RoomId = roomUpdate.RoomId };
 
-                // TODO: Add a way to batch these into 1 call
-                IEnumerable<Task<PlayerInfo?>> getPlayerInfoTasks = roomUpdate.PlayerIds.Select(async playerId =>
+                foreach (int playerId in roomUpdate.PlayerIds)
                 {
                     try 
                     {
                         var result = await _dungeonController.GetPlayerInfoAsync(playerId, context.CancellationToken);
-                        return result.ToProto();
+                        grpcResponse.Players.Add(result.ToProto());
                     }
                     catch (KeyNotFoundException)
                     {
                         // Player disconnected since the update was queued; skip them.
-                        return null; 
                     }
-                });
-
-                PlayerInfo?[] grpcPlayers = await Task.WhenAll(getPlayerInfoTasks);
-                grpcResponse.Players.AddRange(grpcPlayers.Where(p => p != null));
+                }
 
                 await responseStream.WriteAsync(grpcResponse);
             }
