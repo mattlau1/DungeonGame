@@ -18,18 +18,14 @@ public class VirtualPlayer
     private Task? _subscriptionTask;
     private CancellationTokenSource? _cts;
 
+    private int _roomId;
+    private float _roomWidth;
+    private float _roomHeight;
     private float _x;
     private float _y;
-    private int _roomId;
-    private float _roomWidth = 32;
-    private float _roomHeight = 32;
     private readonly Random _random = new();
     private bool _isRunning;
 
-    public int PlayerId => _playerId;
-    public int RoomId => _roomId;
-    public float X => _x;
-    public float Y => _y;
     public bool IsConnected { get; private set; }
 
     public VirtualPlayer(
@@ -53,7 +49,6 @@ public class VirtualPlayer
             _channel = GrpcChannel.ForAddress(_serverUrl);
             _client = new DungeonController.DungeonControllerClient(_channel);
 
-            // Spawn player
             var spawnStopwatch = Stopwatch.StartNew();
             var spawnResponse = await _client.SpawnPlayerAsync(new SpawnRequest());
             spawnStopwatch.Stop();
@@ -62,22 +57,21 @@ public class VirtualPlayer
 
             _playerId = spawnResponse.Id;
             _roomId = spawnResponse.RoomId;
-            _x = spawnResponse.Location.X;
-            _y = spawnResponse.Location.Y;
+            float x = spawnResponse.Location.X;
+            float y = spawnResponse.Location.Y;
 
             var roomInfo = await _client.GetRoomInfoAsync(new RoomInfoRequest { RoomId = _roomId });
             _roomWidth = roomInfo.Width;
             _roomHeight = roomInfo.Height;
             
             const float margin = 1.0f;
-            _x = Math.Clamp(_x, margin, _roomWidth - margin);
-            _y = Math.Clamp(_y, margin, _roomHeight - margin);
+            _x = Math.Clamp(x, margin, _roomWidth - margin);
+            _y = Math.Clamp(y, margin, _roomHeight - margin);
             
             Console.WriteLine($"Player {_playerId} spawned in room {_roomId} with size {_roomWidth}x{_roomHeight} at ({_x:F2},{_y:F2})");
 
             _metrics.RegisterPlayer(_playerId);
 
-            // Subscribe to room updates
             _cts = new CancellationTokenSource();
             var subscribeStopwatch = Stopwatch.StartNew();
             var roomStream = _client.SubscribeRoom(
@@ -102,9 +96,7 @@ public class VirtualPlayer
                                 if (player.Id == _playerId)
                                 {
                                     _roomId = player.RoomId;
-                                    _x = player.Location.X;
-                                    _y = player.Location.Y;
-                                    _metrics.RecordPlayerLocation(_playerId, _x, _y, _roomId);
+                                    _metrics.RecordPlayerLocation(_playerId, player.Location.X, player.Location.Y, _roomId);
                                 }
                             }
                         }
