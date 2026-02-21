@@ -10,7 +10,7 @@ using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.External;
 using DungeonServer.Infrastructure.EntityFramework;
 using DungeonServer.Infrastructure.EntityFramework.Stores.Player;
-using DungeonServer.Infrastructure.InMemory.Rooms;
+using DungeonServer.Infrastructure.EntityFramework.Stores.Rooms;
 using DungeonServer.Infrastructure.Messaging.Rooms;
 using DungeonServer.Service.Services.Core;
 using Microsoft.EntityFrameworkCore;
@@ -23,8 +23,8 @@ builder.Services.AddDbContext<DungeonDbContext>(options => options.UseNpgsql(con
 builder.Services.AddGrpc();
 
 builder.Services.AddSingleton<IRoomSubscriptionRegistry, RoomSubscriptionRegistry>();
-builder.Services.AddSingleton<IRoomStore, InMemoryRoomStore>();
 builder.Services.AddScoped<IPlayerStore, EfPlayerStore>();
+builder.Services.AddScoped<IRoomStore, EfRoomStore>();
 
 builder.Services.AddScoped<IPlayerManager, PlayerManager>();
 builder.Services.AddScoped<IDungeonArchitect, DungeonArchitect>();
