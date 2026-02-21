@@ -24,6 +24,7 @@ public class BenchmarkRunner
         _dashboard = dashboard;
         _cancellationToken = cancellationToken;
         _metrics = new MetricsCollector();
+        _metrics.SetLogFilePath("benchmark_failures.json");
         _metrics.OnMetricsUpdated += m => _dashboard.UpdateMetrics(m);
     }
 
@@ -187,6 +188,8 @@ public class BenchmarkRunner
 
     private void SaveResults()
     {
+        _metrics.SaveFailureLog();
+
         var results = new { Timestamp = DateTime.UtcNow, Results = _results };
 
         var json = JsonSerializer.Serialize(

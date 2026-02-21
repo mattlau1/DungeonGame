@@ -1,6 +1,17 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 
 namespace DungeonServer.Benchmark;
+
+public class FailureLogEntry
+{
+    public DateTime Timestamp { get; set; }
+    public int PlayerId { get; set; }
+    public string FailureType { get; set; } = "";
+    public string Message { get; set; } = "";
+    public double LatencyMs { get; set; }
+    public string? StackTrace { get; set; }
+}
 
 public class TimeBoundedLatencyTracker
 {
@@ -47,14 +58,34 @@ public class MetricsCollector
     private TimeBoundedLatencyTracker _movementLatencies = new(TimeSpan.Zero);
     private TimeBoundedLatencyTracker _roomUpdateLatencies = new(TimeSpan.Zero);
     private readonly ConcurrentDictionary<int, PlayerMetrics> _playerMetrics = new();
+    private readonly ConcurrentQueue<FailureLogEntry> _failureLog = new();
 
     private long _totalMovementRequests;
     private long _successfulMovements;
     private long _failedMovements;
     private long _roomTransitions;
     private DateTime _testStartTime;
+    private string _logFilePath = "";
 
     public event Action<MetricsSnapshot>? OnMetricsUpdated;
+
+    public void SetLogFilePath(string path)
+    {
+        _logFilePath = path;
+    }
+
+    public void RecordFailure(int playerId, string failureType, string message, double latencyMs, string? stackTrace = null)
+    {
+        _failureLog.Enqueue(new FailureLogEntry
+        {
+            Timestamp = DateTime.UtcNow,
+            PlayerId = playerId,
+            FailureType = failureType,
+            Message = message,
+            LatencyMs = latencyMs,
+            StackTrace = stackTrace
+        });
+    }
 
     public void StartTest(int testDurationSeconds)
     {
@@ -175,6 +206,26 @@ public class MetricsCollector
         _successfulMovements = 0;
         _failedMovements = 0;
         _roomTransitions = 0;
+    }
+
+    public void SaveFailureLog()
+    {
+        if (string.IsNullOrEmpty(_logFilePath)) return;
+
+        var failures = _failureLog.ToArray();
+        if (failures.Length == 0) return;
+
+        var log = new
+        {
+            Timestamp = DateTime.UtcNow,
+            TotalFailures = failures.Length,
+            FailuresByType = failures.GroupBy(f => f.FailureType).ToDictionary(g => g.Key, g => g.Count()),
+            Failures = failures
+        };
+
+        var json = JsonSerializer.Serialize(log, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(_logFilePath, json);
+        Console.WriteLine($"Failure log saved to {_logFilePath} ({failures.Length} failures recorded)");
     }
 }
 

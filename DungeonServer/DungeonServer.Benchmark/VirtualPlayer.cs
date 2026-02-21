@@ -114,6 +114,7 @@ public class VirtualPlayer
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Player {_playerId} subscription error: {ex.Message}");
+                        _metrics.RecordFailure(_playerId, "SubscriptionError", ex.Message, 0, ex.StackTrace);
                     }
                 },
                 _cts.Token);
@@ -123,6 +124,7 @@ public class VirtualPlayer
         catch (Exception ex)
         {
             Console.WriteLine($"Player {_playerId} connection failed: {ex.Message}");
+            _metrics.RecordFailure(_playerId, "ConnectionFailed", ex.Message, 0, ex.StackTrace);
             IsConnected = false;
 
             // Cleanup on partial failure
@@ -194,20 +196,31 @@ public class VirtualPlayer
 
                             _metrics.RecordPlayerLocation(_playerId, _x, _y, _roomId);
                         }
+                        else
+                        {
+                            _metrics.RecordFailure(_playerId, "MovementRejected", $"Server rejected movement: {response.StatusResponse}. Current pos: ({_x:F2}, {_y:F2}), RoomId: {_roomId}, Target: ({inputX:F2}, {inputY:F2})", stopwatch.Elapsed.TotalMilliseconds);
+                        }
                     }
                     else
                     {
                         stopwatch.Stop();
                         _metrics.RecordMovementLatency(stopwatch.Elapsed, false);
+                        _metrics.RecordFailure(_playerId, "MovementTimeout", "Movement request timed out after 5 seconds - server not responding", stopwatch.Elapsed.TotalMilliseconds);
                     }
                 }
                 catch (OperationCanceledException)
                 {
                     // Expected on timeout or shutdown
                 }
-                catch (Exception)
+                catch (RpcException ex)
                 {
                     _metrics.RecordMovementLatency(stopwatch.Elapsed, false);
+                    _metrics.RecordFailure(_playerId, $"RpcException_{ex.StatusCode}", ex.Message, stopwatch.Elapsed.TotalMilliseconds, ex.StackTrace);
+                }
+                catch (Exception ex)
+                {
+                    _metrics.RecordMovementLatency(stopwatch.Elapsed, false);
+                    _metrics.RecordFailure(_playerId, ex.GetType().Name, ex.Message, stopwatch.Elapsed.TotalMilliseconds, ex.StackTrace);
                 }
 
                 try
