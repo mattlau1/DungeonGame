@@ -126,20 +126,10 @@ public class InMemoryRoomStore : IRoomStore
     {
         ct.ThrowIfCancellationRequested();
 
-        if (!_roomStates.TryGetValue(roomId, out LockableRoomState? room))
+        RoomStateSnapshot? snapshot = await GetRoomAsync(roomId, ct);
+        if (snapshot != null)
         {
-            return;
-        }
-
-        await room.Gate.WaitAsync(ct);
-        try
-        {
-            RoomStateSnapshot snapshot = RoomStateSnapshot.From(room.RoomState);
             _subscriptionRegistry.PublishUpdate(roomId, snapshot, context);
-        }
-        finally
-        {
-            room.Gate.Release();
         }
     }
 
