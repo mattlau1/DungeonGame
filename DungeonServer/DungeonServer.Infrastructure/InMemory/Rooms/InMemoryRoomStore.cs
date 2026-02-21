@@ -3,7 +3,7 @@ using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
 
-namespace DungeonServer.Infrastructure.Persistence.InMemory.Rooms;
+namespace DungeonServer.Infrastructure.InMemory.Rooms;
 
 public class InMemoryRoomStore : IRoomStore
 {

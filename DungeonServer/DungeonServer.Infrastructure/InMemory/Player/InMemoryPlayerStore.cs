@@ -3,7 +3,7 @@ using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Shared;
 
-namespace DungeonServer.Infrastructure.Persistence.InMemory.Player;
+namespace DungeonServer.Infrastructure.InMemory.Player;
 
 public class InMemoryPlayerStore : IPlayerStore
 {

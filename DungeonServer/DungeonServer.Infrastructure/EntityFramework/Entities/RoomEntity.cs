@@ -1,6 +1,6 @@
 using DungeonServer.Application.Core.Rooms.Models;
 
-namespace DungeonServer.Infrastructure.Persistence.Entities;
+namespace DungeonServer.Infrastructure.EntityFramework.Entities;
 
 public class RoomEntity
 {

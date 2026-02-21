@@ -1,7 +1,7 @@
-using DungeonServer.Infrastructure.Persistence.Entities;
+using DungeonServer.Infrastructure.EntityFramework.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace DungeonServer.Infrastructure.Persistence;
+namespace DungeonServer.Infrastructure.EntityFramework;
 
 public class DungeonDbContext(DbContextOptions options) : DbContext(options)
 {
