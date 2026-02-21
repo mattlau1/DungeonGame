@@ -61,9 +61,9 @@ public class EfPlayerStore : IPlayerStore
         return ToSnapshot(player);
     }
 
-    public async Task<int> GetPlayerCountAsync(CancellationToken ct)
+    public async Task<int> GetActivePlayerCountAsync(CancellationToken ct)
     {
-        return await _dbContext.Players.CountAsync(ct);
+        return await _dbContext.Players.CountAsync(player => player.IsOnline, ct);
     }
 
     public async Task<PlayerSnapshot?> GetFirstActivePlayerAsync(CancellationToken ct)

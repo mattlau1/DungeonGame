@@ -11,7 +11,7 @@ public interface IPlayerStore
 
     Task<PlayerSnapshot?> GetPlayerAsync(int playerId, CancellationToken ct);
 
-    Task<int> GetPlayerCountAsync(CancellationToken ct);
+    Task<int> GetActivePlayerCountAsync(CancellationToken ct);
     
     Task<PlayerSnapshot?> GetFirstActivePlayerAsync(CancellationToken ct);
     

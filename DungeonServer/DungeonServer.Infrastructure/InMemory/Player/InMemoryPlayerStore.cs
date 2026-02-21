@@ -87,10 +87,10 @@ public class InMemoryPlayerStore : IPlayerStore
         }
     }
 
-    public Task<int> GetPlayerCountAsync(CancellationToken ct)
+    public Task<int> GetActivePlayerCountAsync(CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        return Task.FromResult(_players.Count);
+        return Task.FromResult(_players.Values.Count(p => p.PlayerInfo.IsOnline));
     }
 
     public async Task<PlayerSnapshot?> GetFirstActivePlayerAsync(CancellationToken ct)
