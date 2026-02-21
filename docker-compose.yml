@@ -8,6 +8,13 @@ services:
       - "5143:8081"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DbConnection=Host=postgres;Port=5432;Database=dungeon_db;Username=dungeon_user;Password=dungeon_password
+      - Redis__Configuration=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   postgres:
     image: postgres:16
