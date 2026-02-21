@@ -46,19 +46,14 @@ public class PlayerManager : IPlayerManager
 
     private async Task<PlayerInfoResult?> TryJoinExistingRoomAsync(CancellationToken ct)
     {
-        IEnumerable<PlayerSnapshot> allPlayers = await _playerStore.GetAllPlayersAsync(ct);
-        PlayerSnapshot[] occupants = allPlayers.Where(p => p.RoomId != RoomConstants.InvalidRoomId)
-            .OrderBy(p => p.PlayerId)
-            .ToArray();
+        PlayerSnapshot? occupant = await _playerStore.GetFirstActivePlayerAsync(ct);
 
-        if (occupants.Length == 0)
+        if (occupant == null)
         {
             return null;
         }
 
-        (_, int targetRoomId, Location targetLocation) = occupants.First();
-
-        return await SpawnPlayerAtRoom(targetRoomId, targetLocation, ct);
+        return await SpawnPlayerAtRoom(occupant.RoomId, occupant.Location, ct);
     }
 
     private async Task<PlayerInfoResult> SpawnPlayerAtRoom(int roomId, Location location, CancellationToken ct)

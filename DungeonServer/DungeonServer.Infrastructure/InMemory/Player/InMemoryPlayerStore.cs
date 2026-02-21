@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Player.Storage;
+using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Shared;
+using Microsoft.VisualBasic;
 
 namespace DungeonServer.Infrastructure.InMemory.Player;
 
@@ -28,7 +30,7 @@ public class InMemoryPlayerStore : IPlayerStore
         ct.ThrowIfCancellationRequested();
 
         int playerId = Interlocked.Increment(ref _nextPlayerId);
-        var info = new PlayerInfo { Id = playerId, RoomId = 0, Location = initialLocation };
+        var info = new PlayerInfo { Id = playerId, RoomId = RoomConstants.InvalidRoomId, Location = initialLocation };
         var entry = new LockablePlayerState(playerId, info);
 
         if (!_players.TryAdd(playerId, entry))
@@ -85,10 +87,31 @@ public class InMemoryPlayerStore : IPlayerStore
         }
     }
 
-    public Task<IEnumerable<PlayerSnapshot>> GetAllPlayersAsync(CancellationToken ct)
+    public Task<int> GetPlayerCountAsync(CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        return Task.FromResult(_players.Values.Select(p => PlayerSnapshot.From(p.PlayerInfo)));
+        return Task.FromResult(_players.Count);
+    }
+
+    public async Task<PlayerSnapshot?> GetFirstActivePlayerAsync(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        LockablePlayerState? player = _players.Values
+            .Where(p => p.PlayerInfo.RoomId != RoomConstants.InvalidRoomId)
+            .OrderBy(p => p.PlayerInfo.Id)
+            .FirstOrDefault();
+
+        if (player == null) return null;
+
+        await player.Gate.WaitAsync(ct);
+        try
+        {
+            return PlayerSnapshot.From(player.PlayerInfo);
+        }
+        finally
+        {
+            player.Gate.Release();
+        }
     }
 
     public Task DeletePlayerAsync(int playerId, CancellationToken ct)

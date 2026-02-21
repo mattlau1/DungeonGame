@@ -73,7 +73,6 @@ public sealed class DungeonController : IDungeonController
 
     public async Task<int> GetActivePlayerCountAsync(CancellationToken ct)
     {
-        IEnumerable<PlayerSnapshot> players = await _playerStore.GetAllPlayersAsync(ct);
-        return players.Count();
+        return await _playerStore.GetPlayerCountAsync(ct);
     }
 }
