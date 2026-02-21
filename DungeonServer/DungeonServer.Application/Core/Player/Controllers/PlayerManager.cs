@@ -86,11 +86,11 @@ public class PlayerManager : IPlayerManager
             return;
         }
 
-        if (player.RoomId != RoomConstants.InvalidRoomId)
+        if (player.IsOnline)
         {
             await _roomStore.RemovePlayerFromRoomAsync(player.RoomId, playerId, ct);
         }
 
-        await _playerStore.DeletePlayerAsync(playerId, ct);
+        await _playerStore.DisconnectPlayerAsync(playerId, ct);
     }
 }

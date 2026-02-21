@@ -30,7 +30,7 @@ public class InMemoryPlayerStore : IPlayerStore
         ct.ThrowIfCancellationRequested();
 
         int playerId = Interlocked.Increment(ref _nextPlayerId);
-        var info = new PlayerInfo { Id = playerId, RoomId = RoomConstants.InvalidRoomId, Location = initialLocation };
+        var info = new PlayerInfo { Id = playerId, RoomId = RoomConstants.InvalidRoomId, Location = initialLocation, IsOnline = true };
         var entry = new LockablePlayerState(playerId, info);
 
         if (!_players.TryAdd(playerId, entry))
@@ -97,7 +97,7 @@ public class InMemoryPlayerStore : IPlayerStore
     {
         ct.ThrowIfCancellationRequested();
         LockablePlayerState? player = _players.Values
-            .Where(p => p.PlayerInfo.RoomId != RoomConstants.InvalidRoomId)
+            .Where(p => p.PlayerInfo.IsOnline)
             .OrderBy(p => p.PlayerInfo.Id)
             .FirstOrDefault();
 
@@ -114,7 +114,7 @@ public class InMemoryPlayerStore : IPlayerStore
         }
     }
 
-    public Task DeletePlayerAsync(int playerId, CancellationToken ct)
+    public Task DisconnectPlayerAsync(int playerId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         _players.TryRemove(playerId, out _);
