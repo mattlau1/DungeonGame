@@ -5,6 +5,7 @@ using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DungeonServer.Infrastructure.Messaging.Rooms;
 
@@ -26,11 +27,11 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
     }
 
     private readonly ConcurrentDictionary<int, RoomChannel> _rooms = new();
-    private readonly IPlayerStore _playerStore;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public RoomSubscriptionRegistry(IPlayerStore playerStore)
+    public RoomSubscriptionRegistry(IServiceScopeFactory scopeFactory)
     {
-        _playerStore = playerStore;
+        _scopeFactory = scopeFactory;
     }
 
     public async IAsyncEnumerable<RoomStateSnapshot> SubscribeAsync(
@@ -38,7 +39,10 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
         int roomId,
         [EnumeratorCancellation] CancellationToken ct)
     {
-        PlayerSnapshot? player = await _playerStore.GetPlayerAsync(subscriberPlayerId, ct);
+        using IServiceScope scope = _scopeFactory.CreateScope();
+        IPlayerStore playerStore = scope.ServiceProvider.GetRequiredService<IPlayerStore>();
+        
+        PlayerSnapshot? player = await playerStore.GetPlayerAsync(subscriberPlayerId, ct);
         if (player == null)
         {
             yield break;

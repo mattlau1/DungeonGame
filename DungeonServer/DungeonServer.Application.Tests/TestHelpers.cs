@@ -7,11 +7,39 @@ using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Infrastructure.InMemory.Player;
 using DungeonServer.Infrastructure.InMemory.Rooms;
 using DungeonServer.Infrastructure.Messaging.Rooms;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DungeonServer.Application.Tests;
 
 public static class TestHelpers
 {
+    private sealed class FakeScopeFactory : IServiceScopeFactory
+    {
+        private readonly IServiceProvider _serviceProvider;
+
+        public FakeScopeFactory(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
+
+        public IServiceScope CreateScope()
+        {
+            return new FakeScope(_serviceProvider);
+        }
+
+        private sealed class FakeScope : IServiceScope
+        {
+            public IServiceProvider ServiceProvider { get; }
+
+            public FakeScope(IServiceProvider serviceProvider)
+            {
+                ServiceProvider = serviceProvider;
+            }
+
+            public void Dispose() { }
+        }
+    }
+
     public record ControllerDependencies(
         DungeonController Controller,
         InMemoryRoomStore RoomStore,
@@ -24,7 +52,11 @@ public static class TestHelpers
     public static ControllerDependencies CreateControllerDependencies()
     {
         var playerStore = new InMemoryPlayerStore();
-        var registry = new RoomSubscriptionRegistry(playerStore);
+        var serviceProvider = new ServiceCollection()
+            .AddSingleton<IPlayerStore>(playerStore)
+            .BuildServiceProvider();
+        var scopeFactory = new FakeScopeFactory(serviceProvider);
+        var registry = new RoomSubscriptionRegistry(scopeFactory);
         var roomStore = new InMemoryRoomStore(registry);
         var movementManager = new MovementManager(playerStore, roomStore);
         var architect = new DungeonArchitect(roomStore);
