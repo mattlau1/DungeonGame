@@ -119,6 +119,7 @@ public class BenchmarkRunner
         _dashboard.UpdateCurrentTest(scenario.Name, playerCount, "Spawning");
 
         _metrics.Reset();
+        _metrics.SetCurrentScenario(scenario.Name);
         _metrics.StartTest(_config.TestDurationSeconds);
 
         _players.Clear();
@@ -174,6 +175,8 @@ public class BenchmarkRunner
         _results.Add(result);
         _dashboard.AddResult(result);
         _dashboard.UpdateCurrentTest(scenario.Name, playerCount, "Complete");
+        
+        _metrics.SaveFailureLog();
     }
 
     private async Task RunFrequencyTestAsync(TestScenario scenario, int playerCount, int movementHz)

@@ -11,6 +11,7 @@ public class FailureLogEntry
     public string Message { get; set; } = "";
     public double LatencyMs { get; set; }
     public string? StackTrace { get; set; }
+    public string ScenarioName { get; set; } = "";
 }
 
 public class TimeBoundedLatencyTracker
@@ -66,12 +67,18 @@ public class MetricsCollector
     private long _roomTransitions;
     private DateTime _testStartTime;
     private string _logFilePath = "";
+    private string _currentScenario = "";
 
     public event Action<MetricsSnapshot>? OnMetricsUpdated;
 
     public void SetLogFilePath(string path)
     {
         _logFilePath = path;
+    }
+
+    public void SetCurrentScenario(string scenarioName)
+    {
+        _currentScenario = scenarioName;
     }
 
     public void RecordFailure(int playerId, string failureType, string message, double latencyMs, string? stackTrace = null)
@@ -83,7 +90,8 @@ public class MetricsCollector
             FailureType = failureType,
             Message = message,
             LatencyMs = latencyMs,
-            StackTrace = stackTrace
+            StackTrace = stackTrace,
+            ScenarioName = _currentScenario
         });
     }
 

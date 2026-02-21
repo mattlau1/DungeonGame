@@ -21,8 +21,8 @@ public class VirtualPlayer
     private float _x;
     private float _y;
     private int _roomId;
-    private const float RoomWidth = 32;
-    private const float RoomHeight = 32;
+    private float _roomWidth = 32;
+    private float _roomHeight = 32;
     private readonly Random _random = new();
     private bool _isRunning;
 
@@ -64,6 +64,16 @@ public class VirtualPlayer
             _roomId = spawnResponse.RoomId;
             _x = spawnResponse.Location.X;
             _y = spawnResponse.Location.Y;
+
+            var roomInfo = await _client.GetRoomInfoAsync(new RoomInfoRequest { RoomId = _roomId });
+            _roomWidth = roomInfo.Width;
+            _roomHeight = roomInfo.Height;
+            
+            const float margin = 1.0f;
+            _x = Math.Clamp(_x, margin, _roomWidth - margin);
+            _y = Math.Clamp(_y, margin, _roomHeight - margin);
+            
+            Console.WriteLine($"Player {_playerId} spawned in room {_roomId} with size {_roomWidth}x{_roomHeight} at ({_x:F2},{_y:F2})");
 
             _metrics.RegisterPlayer(_playerId);
 
@@ -150,6 +160,9 @@ public class VirtualPlayer
 
         _isRunning = true;
 
+        float localX = _x;
+        float localY = _y;
+
         try
         {
             using var movementStream = _client.SetMovementInput();
@@ -158,8 +171,7 @@ public class VirtualPlayer
             {
                 var stopwatch = Stopwatch.StartNew();
 
-                // Random walk with boundary checking
-                var (inputX, inputY) = CalculateMovementInput();
+                var (inputX, inputY) = CalculateMovementInput(localX, localY);
 
                 try
                 {
@@ -172,7 +184,6 @@ public class VirtualPlayer
                         new SetMovementInputRequest { PlayerId = _playerId, InputX = inputX, InputY = inputY },
                         linkedCts.Token);
 
-                    // Read response
                     var moveNextTask = movementStream.ResponseStream.MoveNext(linkedCts.Token);
                     if (await Task.WhenAny(moveNextTask, Task.Delay(5000, linkedCts.Token)) == moveNextTask &&
                         moveNextTask.Result)
@@ -183,8 +194,20 @@ public class VirtualPlayer
                         bool success = response.StatusResponse == MovementInputStatusResult.Ok;
                         _metrics.RecordMovementLatency(stopwatch.Elapsed, success);
 
-                        _x = response.AuthoritativeLocation.X;
-                        _y = response.AuthoritativeLocation.Y;
+                        float newX = response.AuthoritativeLocation.X;
+                        float newY = response.AuthoritativeLocation.Y;
+                        
+                        if (!_enableRoomTransitions)
+                        {
+                            const float margin = 1.0f;
+                            newX = Math.Clamp(newX, margin, _roomWidth - margin);
+                            newY = Math.Clamp(newY, margin, _roomHeight - margin);
+                        }
+                        
+                        localX = newX;
+                        localY = newY;
+                        _x = newX;
+                        _y = newY;
 
                         if (success)
                         {
@@ -198,7 +221,7 @@ public class VirtualPlayer
                         }
                         else
                         {
-                            _metrics.RecordFailure(_playerId, "MovementRejected", $"Server rejected movement: {response.StatusResponse}. Current pos: ({_x:F2}, {_y:F2}), RoomId: {_roomId}, Target: ({inputX:F2}, {inputY:F2})", stopwatch.Elapsed.TotalMilliseconds);
+                            _metrics.RecordFailure(_playerId, "MovementRejected", $"Server rejected: {response.StatusResponse}. Pos: ({localX:F2},{localY:F2}) Room:{_roomId} RmSize:{_roomWidth}x{_roomHeight} Target:({inputX:F2},{inputY:F2})", stopwatch.Elapsed.TotalMilliseconds);
                         }
                     }
                     else
@@ -239,20 +262,26 @@ public class VirtualPlayer
         }
     }
 
-    private (float x, float y) CalculateMovementInput()
+    private (float x, float y) CalculateMovementInput(float currentX, float currentY)
     {
-        // Random direction
         var angle = _random.NextDouble() * Math.PI * 2;
-        var distance = 2.0 + _random.NextDouble() * 3.0; // 2-5 units per tick
-
+        var distance = 2.0 + _random.NextDouble() * 3.0;
+    
         float inputX = (float)(Math.Cos(angle) * distance);
         float inputY = (float)(Math.Sin(angle) * distance);
 
-        // If room transitions disabled, bounce off walls
         if (!_enableRoomTransitions)
         {
-            if (_x + inputX < 1 || _x + inputX >= RoomWidth - 1) inputX = -inputX;
-            if (_y + inputY < 1 || _y + inputY >= RoomHeight - 1) inputY = -inputY;
+            const float margin = 1.0f;
+        
+            float predictedX = currentX + inputX;
+            float predictedY = currentY + inputY;
+
+            float clampedX = Math.Clamp(predictedX, margin, _roomWidth - margin);
+            float clampedY = Math.Clamp(predictedY, margin, _roomHeight - margin);
+
+            inputX = clampedX - currentX;
+            inputY = clampedY - currentY;
         }
 
         return (inputX, inputY);
