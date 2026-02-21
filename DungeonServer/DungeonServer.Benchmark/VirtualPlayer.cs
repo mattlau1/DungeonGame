@@ -181,11 +181,11 @@ public class VirtualPlayer
                         bool success = response.StatusResponse == MovementInputStatusResult.Ok;
                         _metrics.RecordMovementLatency(stopwatch.Elapsed, success);
 
+                        _x = response.AuthoritativeLocation.X;
+                        _y = response.AuthoritativeLocation.Y;
+
                         if (success)
                         {
-                            _x = response.AuthoritativeLocation.X;
-                            _y = response.AuthoritativeLocation.Y;
-
                             if (response.RoomId != _roomId)
                             {
                                 _metrics.RecordRoomTransition();
