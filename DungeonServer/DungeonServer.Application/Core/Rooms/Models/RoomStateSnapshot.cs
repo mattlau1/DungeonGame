@@ -62,8 +62,8 @@ public sealed record RoomStateSnapshot
         {
             (Dir: Direction.North, Dist: Math.Abs(Height - location.Y)),
             (Dir: Direction.South, Dist: Math.Abs(location.Y)),
-            (Dir: Direction.East,  Dist: Math.Abs(Width - location.X)),
-            (Dir: Direction.West,  Dist: Math.Abs(location.X))
+            (Dir: Direction.East, Dist: Math.Abs(Width - location.X)),
+            (Dir: Direction.West, Dist: Math.Abs(location.X))
         };
 
         return distances.MinBy(x => x.Dist).Dir;
