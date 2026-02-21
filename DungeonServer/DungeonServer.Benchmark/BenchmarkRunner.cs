@@ -107,7 +107,7 @@ public class BenchmarkRunner
             retryCount++;
         }
 
-        if (count != 0)
+        if (count > 0)
         {
             throw new Exception(
                 $"Server did not drain properly after {retryCount} retries. Remaining players: {count}");
