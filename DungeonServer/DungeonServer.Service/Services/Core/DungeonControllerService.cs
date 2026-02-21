@@ -19,6 +19,17 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         _dungeonController = dungeonController;
     }
 
+    public override async Task<RoomInfo> GetRoomInfo(RoomInfoRequest request, ServerCallContext context)
+    {
+        RoomStateSnapshot? room = await _dungeonController.GetRoomAsync(request.RoomId, context.CancellationToken);
+        if (room == null)
+        {
+            throw new RpcException(new Status(StatusCode.NotFound, $"Room Id {request.RoomId} not found."));
+        }
+
+        return room.ToProto();
+    }
+
     public override async Task SubscribeRoom(
         SubscribeRoomRequest request,
         IServerStreamWriter<RoomSnapshot> responseStream,
@@ -37,7 +48,7 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
 
                 foreach (int playerId in roomUpdate.PlayerIds)
                 {
-                    try 
+                    try
                     {
                         var result = await _dungeonController.GetPlayerInfoAsync(playerId, context.CancellationToken);
                         grpcResponse.Players.Add(result.ToProto());

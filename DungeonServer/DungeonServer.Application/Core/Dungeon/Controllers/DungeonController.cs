@@ -75,4 +75,9 @@ public sealed class DungeonController : IDungeonController
     {
         return await _playerStore.GetActivePlayerCountAsync(ct);
     }
+
+    public async Task<RoomStateSnapshot?> GetRoomAsync(int roomId, CancellationToken ct)
+    {
+        return await _roomStore.GetRoomAsync(roomId, ct);
+    }
 }

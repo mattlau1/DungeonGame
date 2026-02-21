@@ -17,4 +17,6 @@ public interface IDungeonController
     Task DisconnectPlayerAsync(int playerId, CancellationToken ct);
 
     Task<int> GetActivePlayerCountAsync(CancellationToken ct);
+    
+    Task<RoomStateSnapshot?> GetRoomAsync(int roomId, CancellationToken ct);
 }

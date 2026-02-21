@@ -9,6 +9,7 @@ import "Core/status.proto";
 import "google/protobuf/empty.proto";
 
 service DungeonController {
+  rpc GetRoomInfo (RoomInfoRequest) returns (RoomInfo);
   rpc SubscribeRoom (SubscribeRoomRequest) returns (stream RoomSnapshot);
   rpc SetMovementInput (stream SetMovementInputRequest) returns (stream SetMovementInputResponse);
   rpc SpawnPlayer (SpawnRequest) returns (PlayerInfo);
