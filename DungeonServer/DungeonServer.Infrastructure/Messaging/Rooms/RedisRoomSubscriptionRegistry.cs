@@ -7,6 +7,7 @@ using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using Google.Protobuf;
+using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using PlayerInfo = DungeonGame.Core.PlayerInfo;
 using Location = DungeonServer.Application.Core.Shared.Location;
@@ -19,7 +20,8 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
     private sealed class RoomChannel
     {
-        public ConcurrentDictionary<Guid, (Channel<RoomUpdate> Channel, int PlayerId)> SubscriberChannels { get; } = new();
+        public ConcurrentDictionary<Guid, (Channel<RoomUpdate> Channel, int PlayerId)> SubscriberChannels { get; } =
+            new();
 
         public RoomPlayerUpdate? CurrentState { get; set; }
 
@@ -28,13 +30,14 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
     }
 
     private readonly ConcurrentDictionary<int, RoomChannel> _rooms = new();
-    private readonly IConnectionMultiplexer _redis;
-    private readonly IPlayerStore _playerStore;
 
-    public RedisRoomSubscriptionRegistry(IConnectionMultiplexer redis, IPlayerStore playerStore)
+    private readonly IConnectionMultiplexer _redis;
+    private readonly IServiceProvider _serviceProvider;
+
+    public RedisRoomSubscriptionRegistry(IConnectionMultiplexer redis, IServiceProvider serviceProvider)
     {
         _redis = redis;
-        _playerStore = playerStore;
+        _serviceProvider = serviceProvider;
     }
 
     public async IAsyncEnumerable<RoomPlayerUpdate> SubscribeAsync(
@@ -42,7 +45,9 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         int roomId,
         [EnumeratorCancellation] CancellationToken ct)
     {
-        var player = await _playerStore.GetPlayerAsync(subscriberPlayerId, ct);
+        using IServiceScope scope = _serviceProvider.CreateScope();
+        var playerStore = scope.ServiceProvider.GetRequiredService<IPlayerStore>();
+        PlayerSnapshot? player = await playerStore.GetPlayerAsync(subscriberPlayerId, ct);
         if (player == null)
         {
             yield break;
