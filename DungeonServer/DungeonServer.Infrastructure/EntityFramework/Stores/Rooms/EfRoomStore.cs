@@ -33,10 +33,14 @@ public class EfRoomStore : IRoomStore
         _dbContext.Rooms.Add(roomEntity);
         await _dbContext.SaveChangesAsync(ct);
 
-        RoomStateSnapshot roomSnapshot = ToSnapshot(roomEntity);
-        PublishRoomUpdateAsync(roomEntity.Id, roomSnapshot, RoomUpdateContext.Broadcast(), ct);
+        var playerUpdate = new RoomPlayerUpdate
+        {
+            RoomId = roomEntity.Id,
+            Players = roomEntity.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
+        };
+        PublishRoomUpdateAsync(roomEntity.Id, playerUpdate, RoomUpdateContext.Broadcast(), ct);
 
-        return roomSnapshot;
+        return ToSnapshot(roomEntity);
     }
 
     public async Task<RoomStateSnapshot> AddPlayerToRoomAsync(int roomId, int playerId, CancellationToken ct)
@@ -66,14 +70,17 @@ public class EfRoomStore : IRoomStore
 
         room.Occupants.Add(player);
 
-        RoomStateSnapshot snapshot = ToSnapshot(room);
-
         await _dbContext.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        PublishRoomUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
+        var playerUpdate = new RoomPlayerUpdate
+        {
+            RoomId = roomId,
+            Players = room.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
+        };
+        PublishRoomUpdateAsync(roomId, playerUpdate, RoomUpdateContext.Broadcast(), ct);
 
-        return snapshot;
+        return ToSnapshot(room);
     }
 
     public async Task<RoomStateSnapshot> RemovePlayerFromRoomAsync(int roomId, int playerId, CancellationToken ct)
@@ -97,14 +104,17 @@ public class EfRoomStore : IRoomStore
 
         room.Occupants.Remove(occupant);
 
-        RoomStateSnapshot snapshot = ToSnapshot(room);
-
         await _dbContext.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        PublishRoomUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
+        var playerUpdate = new RoomPlayerUpdate
+        {
+            RoomId = roomId,
+            Players = room.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
+        };
+        PublishRoomUpdateAsync(roomId, playerUpdate, RoomUpdateContext.Broadcast(), ct);
 
-        return snapshot;
+        return ToSnapshot(room);
     }
 
     public async Task<RoomStateSnapshot?> GetRoomAsync(int roomId, CancellationToken ct)
@@ -124,20 +134,30 @@ public class EfRoomStore : IRoomStore
 
     public async Task PublishRoomUpdateAsync(int roomId, RoomUpdateContext context, CancellationToken ct)
     {
-        RoomStateSnapshot? snapshot = await GetRoomAsync(roomId, ct);
-        if (snapshot != null)
+        RoomEntity? room = await _dbContext.Rooms.AsNoTracking()
+            .Include(r => r.Occupants)
+            .FirstOrDefaultAsync(r => r.Id == roomId, ct);
+
+        if (room == null)
         {
-            await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, context, ct);
+            return;
         }
+
+        var playerUpdate = new RoomPlayerUpdate
+        {
+            RoomId = roomId,
+            Players = room.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
+        };
+        await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, context, ct);
     }
 
     private void PublishRoomUpdateAsync(
         int roomId,
-        RoomStateSnapshot snapshot,
+        RoomPlayerUpdate update,
         RoomUpdateContext context,
         CancellationToken ct)
     {
-        _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, context, ct);
+        _subscriptionRegistry.PublishUpdateAsync(roomId, update, context, ct);
     }
 
     public async Task LinkRoomsAsync(int roomIdA, int roomIdB, Direction directionFromAToB, CancellationToken ct)
@@ -226,11 +246,21 @@ public class EfRoomStore : IRoomStore
         await _dbContext.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        PublishRoomUpdateAsync(fromRoomId, ToSnapshot(fromRoom), RoomUpdateContext.Broadcast(), ct);
-        PublishRoomUpdateAsync(toRoomId, ToSnapshot(toRoom), RoomUpdateContext.Broadcast(), ct);
+        var playerUpdateFrom = new RoomPlayerUpdate
+        {
+            RoomId = fromRoomId,
+            Players = fromRoom.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
+        };
+        var playerUpdateTo = new RoomPlayerUpdate
+        {
+            RoomId = toRoomId,
+            Players = toRoom.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
+        };
+        PublishRoomUpdateAsync(fromRoomId, playerUpdateFrom, RoomUpdateContext.Broadcast(), ct);
+        PublishRoomUpdateAsync(toRoomId, playerUpdateTo, RoomUpdateContext.Broadcast(), ct);
     }
 
-    public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(
+    public IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(
         int subscriberPlayerId,
         int roomId,
         CancellationToken ct)

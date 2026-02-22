@@ -17,13 +17,13 @@ public class RoomSubscriptionBehaviorTests
         var player = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-        var snapshots = new List<RoomStateSnapshot>();
+        var snapshots = new List<RoomPlayerUpdate>();
 
         Task task = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snapshot in deps.RoomStore.SubscribeRoomAsync(player.PlayerId, 999, cts.Token))
+                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(player.PlayerId, 999, cts.Token))
                 {
                     snapshots.Add(snapshot);
                 }
@@ -54,14 +54,14 @@ public class RoomSubscriptionBehaviorTests
         var subscriber2 = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var snapshots1 = new List<RoomStateSnapshot>();
-        var snapshots2 = new List<RoomStateSnapshot>();
+        var snapshots1 = new List<RoomPlayerUpdate>();
+        var snapshots2 = new List<RoomPlayerUpdate>();
 
         Task task1 = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snapshot in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(
                                    subscriber1.PlayerId,
                                    createdRoom1.RoomId,
                                    cts.Token))
@@ -79,7 +79,7 @@ public class RoomSubscriptionBehaviorTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snapshot in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(
                                    subscriber2.PlayerId,
                                    createdRoom2.RoomId,
                                    cts.Token))
@@ -131,13 +131,13 @@ public class RoomSubscriptionBehaviorTests
         var subscriber = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var snapshots = new List<RoomStateSnapshot>();
+        var snapshots = new List<RoomPlayerUpdate>();
 
         Task subscribeTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snapshot in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(
                                    subscriber.PlayerId,
                                    createdRoom.RoomId,
                                    cts.Token))

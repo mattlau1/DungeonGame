@@ -285,7 +285,7 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot _ in deps.Controller.SubscribeRoomAsync(spawned.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate _ in deps.Controller.SubscribeRoomAsync(spawned.PlayerInfo.Id,
                                        spawned.RoomId,
                                        cts.Token))
                     {
@@ -308,13 +308,13 @@ public static class DungeonControllerTests
             int roomId = player1.RoomId;
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-            var snapshots = new List<RoomStateSnapshot>();
+            var snapshots = new List<RoomPlayerUpdate>();
 
             Task subscriptionTask = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -346,12 +346,12 @@ public static class DungeonControllerTests
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
 
-            var snapshots1 = new List<RoomStateSnapshot>();
+            var snapshots1 = new List<RoomPlayerUpdate>();
             Task task1 = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -365,12 +365,12 @@ public static class DungeonControllerTests
                 }
             });
 
-            var snapshots2 = new List<RoomStateSnapshot>();
+            var snapshots2 = new List<RoomPlayerUpdate>();
             Task task2 = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player2.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player2.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -402,13 +402,13 @@ public static class DungeonControllerTests
             int roomId = player1.RoomId;
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-            var snapshots = new List<RoomStateSnapshot>();
+            var snapshots = new List<RoomPlayerUpdate>();
 
             Task subscriptionTask = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -438,19 +438,19 @@ public static class DungeonControllerTests
             int roomId = player.RoomId;
 
             await Task.Delay(100);
-            var snapshot1 = new RoomStateSnapshot(roomId, RoomType.Combat, 32, 32, new List<PlayerSnapshot>());
+            var snapshot1 = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
             await deps.Registry.PublishUpdateAsync(roomId, snapshot1, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
             await Task.Delay(100);
 
             using var cts = new CancellationTokenSource();
-            var snapshots = new List<RoomStateSnapshot>();
+            var snapshots = new List<RoomPlayerUpdate>();
 
             Task subscriptionTask = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -463,14 +463,14 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            var snapshot2 = new RoomStateSnapshot(roomId, RoomType.Combat, 42, 42, new List<PlayerSnapshot>());
+            var snapshot2 = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
             await deps.Registry.PublishUpdateAsync(roomId, snapshot2, RoomUpdateContext.Broadcast(), cts.Token);
 
             await Task.Delay(50);
             await cts.CancelAsync();
 
             await Task.Delay(100);
-            var snapshot3 = new RoomStateSnapshot(roomId, RoomType.Combat, 43, 43, new List<PlayerSnapshot>());
+            var snapshot3 = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
             await deps.Registry.PublishUpdateAsync(roomId, snapshot3, RoomUpdateContext.Broadcast(), cts.Token);
 
             await Task.Delay(100);
@@ -486,13 +486,13 @@ public static class DungeonControllerTests
             PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            var snapshots = new List<RoomStateSnapshot>();
+            var snapshots = new List<RoomPlayerUpdate>();
 
             Task subscriptionTask = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player.PlayerInfo.Id,
                                        999, cts.Token))
                     {
                         snapshots.Add(snap);
@@ -516,13 +516,13 @@ public static class DungeonControllerTests
             int roomId = player.RoomId;
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            var snapshots = new List<RoomStateSnapshot>();
+            var snapshots = new List<RoomPlayerUpdate>();
 
             Task subscriptionTask = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(999, roomId, cts.Token))
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(999, roomId, cts.Token))
                     {
                         snapshots.Add(snap);
                     }
@@ -545,7 +545,7 @@ public static class DungeonControllerTests
             int roomId = player.RoomId;
 
             await Task.Delay(100);
-            var excludedSnapshot = new RoomStateSnapshot(roomId, RoomType.Combat, 41, 41, new List<PlayerSnapshot>());
+            var excludedSnapshot = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = player.PlayerInfo.Id };
             await deps.Registry.PublishUpdateAsync(roomId, excludedSnapshot,
                 RoomUpdateContext.ExcludePlayer(player.PlayerInfo.Id),
                 CancellationToken.None);
@@ -553,13 +553,13 @@ public static class DungeonControllerTests
             await Task.Delay(100);
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-            var snapshots = new List<RoomStateSnapshot>();
+            var snapshots = new List<RoomPlayerUpdate>();
 
             Task task = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -589,13 +589,13 @@ public static class DungeonControllerTests
             int roomId = player1.RoomId;
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            var player2Snapshots = new List<RoomStateSnapshot>();
+            var player2Snapshots = new List<RoomPlayerUpdate>();
 
             Task subscriptionTask = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player2.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player2.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -634,13 +634,13 @@ public static class DungeonControllerTests
             int roomId = player1.RoomId;
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            var snapshots = new List<RoomStateSnapshot>();
+            var snapshots = new List<RoomPlayerUpdate>();
 
             Task subscriptionTask = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -655,7 +655,7 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            var moveSnapshot = new RoomStateSnapshot(roomId, RoomType.Combat, 42, 42, new List<PlayerSnapshot>());
+            var moveSnapshot = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
             await deps.Registry.PublishUpdateAsync(roomId, moveSnapshot, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
             await Task.Delay(50);
@@ -675,13 +675,13 @@ public static class DungeonControllerTests
             int roomId = player1.RoomId;
 
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
-            var player1Snapshots = new List<RoomStateSnapshot>();
+            var player1Snapshots = new List<RoomPlayerUpdate>();
 
             Task subscriptionTask = Task.Run(async () =>
             {
                 try
                 {
-                    await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -696,7 +696,7 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            var moveSnapshot = new RoomStateSnapshot(roomId, RoomType.Combat, 43, 43, new List<PlayerSnapshot>());
+            var moveSnapshot = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
             await deps.Registry.PublishUpdateAsync(roomId, moveSnapshot, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
             await Task.Delay(50);

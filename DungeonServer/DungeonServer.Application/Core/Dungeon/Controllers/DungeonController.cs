@@ -61,7 +61,7 @@ public sealed class DungeonController : IDungeonController
         return await _movementManager.SetMovementInput(moveRequest, ct);
     }
 
-    public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct)
+    public IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct)
     {
         return _roomStore.SubscribeRoomAsync(playerId, roomId, ct);
     }

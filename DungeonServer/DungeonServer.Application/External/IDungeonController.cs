@@ -12,7 +12,7 @@ public interface IDungeonController
 
     Task<MovementInputResponse> SetMovementInputAsync(int playerId, float inputX, float inputY, CancellationToken ct);
 
-    IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct);
+    IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct);
 
     Task DisconnectPlayerAsync(int playerId, CancellationToken ct);
 

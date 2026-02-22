@@ -22,7 +22,7 @@ public class RoomSubscriptionTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snapshot in deps.Controller.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snapshot in deps.Controller.SubscribeRoomAsync(
                                    player.PlayerInfo.Id,
                                    player.PlayerInfo.RoomId,
                                    cts.Token))
@@ -52,13 +52,13 @@ public class RoomSubscriptionTests
         int roomId = first.PlayerInfo.RoomId;
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var snapshots = new List<RoomStateSnapshot>();
+        var snapshots = new List<RoomPlayerUpdate>();
 
         Task enumerateTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
                                    first.PlayerInfo.Id,
                                    roomId,
                                    cts.Token))
@@ -102,7 +102,7 @@ public class RoomSubscriptionTests
         var emitted = false;
         try
         {
-            await foreach (RoomStateSnapshot _ in deps.Controller.SubscribeRoomAsync(-1, -1, cts.Token))
+            await foreach (RoomPlayerUpdate _ in deps.Controller.SubscribeRoomAsync(-1, -1, cts.Token))
             {
                 emitted = true;
                 break;
@@ -127,12 +127,12 @@ public class RoomSubscriptionTests
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
-        var snapshots1 = new List<RoomStateSnapshot>();
+        var snapshots1 = new List<RoomPlayerUpdate>();
         Task task1 = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
                                    player1.PlayerInfo.Id,
                                    roomId,
                                    cts.Token))
@@ -146,12 +146,12 @@ public class RoomSubscriptionTests
             }
         });
 
-        var snapshots2 = new List<RoomStateSnapshot>();
+        var snapshots2 = new List<RoomPlayerUpdate>();
         Task task2 = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
                                    player2.PlayerInfo.Id,
                                    roomId,
                                    cts.Token))
@@ -194,12 +194,12 @@ public class RoomSubscriptionTests
 
         using var cts = new CancellationTokenSource();
 
-        var snapshots = new List<RoomStateSnapshot>();
+        var snapshots = new List<RoomPlayerUpdate>();
         Task task = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
                                    player.PlayerInfo.Id,
                                    roomId,
                                    cts.Token))
@@ -248,13 +248,13 @@ public class RoomSubscriptionTests
         await Task.Delay(100);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var snapshots = new List<RoomStateSnapshot>();
+        var snapshots = new List<RoomPlayerUpdate>();
 
         Task task = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.Controller.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
                                    player1.PlayerInfo.Id,
                                    roomId,
                                    cts.Token))

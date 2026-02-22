@@ -49,8 +49,13 @@ public class InMemoryRoomStore : IRoomStore
             throw new InvalidOperationException("Failed to create room due to id collision");
         }
 
-        RoomStateSnapshot snapshot = RoomStateSnapshot.From(entry.RoomState);
-        await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
+        var snapshot = RoomStateSnapshot.From(entry.RoomState);
+        var playerUpdate = new RoomPlayerUpdate
+        {
+            RoomId = roomId,
+            Players = entry.RoomState.Players.ToList()
+        };
+        await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, RoomUpdateContext.Broadcast(), ct);
 
         return snapshot;
     }
@@ -80,8 +85,13 @@ public class InMemoryRoomStore : IRoomStore
 
             room.RoomState.Players.Add(player);
 
-            RoomStateSnapshot snapshot = RoomStateSnapshot.From(room.RoomState);
-            await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
+            var snapshot = RoomStateSnapshot.From(room.RoomState);
+            var playerUpdate = new RoomPlayerUpdate
+            {
+                RoomId = roomId,
+                Players = snapshot.Players
+            };
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, RoomUpdateContext.Broadcast(), ct);
 
             return snapshot;
         }
@@ -110,7 +120,12 @@ public class InMemoryRoomStore : IRoomStore
             }
             
             var snapshot = RoomStateSnapshot.From(room.RoomState);
-            await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
+            var playerUpdate = new RoomPlayerUpdate
+            {
+                RoomId = roomId,
+                Players = snapshot.Players
+            };
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, RoomUpdateContext.Broadcast(), ct);
             return snapshot;
         }
         finally
@@ -146,10 +161,24 @@ public class InMemoryRoomStore : IRoomStore
     {
         ct.ThrowIfCancellationRequested();
 
-        RoomStateSnapshot? snapshot = await GetRoomAsync(roomId, ct);
-        if (snapshot != null)
+        if (!_roomStates.TryGetValue(roomId, out LockableRoomState? room))
         {
-            await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, context, ct);
+            return;
+        }
+
+        await room.Gate.WaitAsync(ct);
+        try
+        {
+            var playerUpdate = new RoomPlayerUpdate
+            {
+                RoomId = roomId,
+                Players = room.RoomState.Players.ToList()
+            };
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, context, ct);
+        }
+        finally
+        {
+            room.Gate.Release();
         }
     }
 
@@ -204,7 +233,7 @@ public class InMemoryRoomStore : IRoomStore
             ct);
     }
 
-    public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(
+    public IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(
         int subscriberPlayerId,
         int roomId,
         CancellationToken ct)
@@ -240,16 +269,18 @@ public class InMemoryRoomStore : IRoomStore
             {
                 update(roomA, roomB);
 
-                await _subscriptionRegistry.PublishUpdateAsync(
-                    roomIdA,
-                    RoomStateSnapshot.From(roomA.RoomState),
-                    RoomUpdateContext.Broadcast(),
-                    ct);
-                await _subscriptionRegistry.PublishUpdateAsync(
-                    roomIdB,
-                    RoomStateSnapshot.From(roomB.RoomState),
-                    RoomUpdateContext.Broadcast(),
-                    ct);
+                var playerUpdateA = new RoomPlayerUpdate
+                {
+                    RoomId = roomIdA,
+                    Players = roomA.RoomState.Players.ToList()
+                };
+                var playerUpdateB = new RoomPlayerUpdate
+                {
+                    RoomId = roomIdB,
+                    Players = roomB.RoomState.Players.ToList()
+                };
+                await _subscriptionRegistry.PublishUpdateAsync(roomIdA, playerUpdateA, RoomUpdateContext.Broadcast(), ct);
+                await _subscriptionRegistry.PublishUpdateAsync(roomIdB, playerUpdateB, RoomUpdateContext.Broadcast(), ct);
             }
             finally
             {

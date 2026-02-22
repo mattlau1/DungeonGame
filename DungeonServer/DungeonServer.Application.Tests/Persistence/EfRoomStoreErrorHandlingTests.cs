@@ -67,7 +67,7 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
             new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _roomStore.LinkRoomsAsync(room.RoomId, 99999, Direction.East, CancellationToken.None));
     }
 

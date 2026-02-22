@@ -9,14 +9,14 @@ namespace DungeonServer.Infrastructure.Messaging.Rooms;
 
 public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
 {
-    private sealed record RoomUpdate(RoomStateSnapshot Snapshot, RoomUpdateContext Context);
+    private sealed record RoomUpdate(RoomPlayerUpdate Update, RoomUpdateContext Context);
 
     private sealed class RoomChannel
     {
         public Channel<RoomUpdate> UpdateChannel { get; } = Channel.CreateBounded<RoomUpdate>(
             new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
 
-        public RoomStateSnapshot? CurrentState { get; set; }
+        public RoomPlayerUpdate? CurrentState { get; set; }
 
         public int SubscriberCount;
     }
@@ -29,7 +29,7 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
         _playerStore = playerStore;
     }
 
-    public async IAsyncEnumerable<RoomStateSnapshot> SubscribeAsync(
+    public async IAsyncEnumerable<RoomPlayerUpdate> SubscribeAsync(
         int subscriberPlayerId,
         int roomId,
         [EnumeratorCancellation] CancellationToken ct)
@@ -45,7 +45,6 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
         try
         {
-            // Emit the current state immediately on subscribe
             if (room.CurrentState != null)
             {
                 yield return room.CurrentState;
@@ -55,7 +54,7 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
             {
                 if (update.Context.ExcludePlayerId != subscriberPlayerId)
                 {
-                    yield return update.Snapshot;
+                    yield return update.Update;
                 }
             }
         }
@@ -68,23 +67,19 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
         }
     }
 
-    public Task PublishUpdateAsync(
-        int roomId,
-        RoomStateSnapshot snapshot,
-        RoomUpdateContext context,
-        CancellationToken ct)
+    public Task PublishUpdateAsync(int roomId, RoomPlayerUpdate update, RoomUpdateContext context, CancellationToken ct)
     {
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
-        room.CurrentState = snapshot;
+        room.CurrentState = update;
 
         if (room.SubscriberCount <= 0)
         {
             return Task.CompletedTask;
         }
 
-        var update = new RoomUpdate(snapshot, context);
+        var roomUpdate = new RoomUpdate(update, context);
 
-        while (!room.UpdateChannel.Writer.TryWrite(update))
+        while (!room.UpdateChannel.Writer.TryWrite(roomUpdate))
         {
         }
 

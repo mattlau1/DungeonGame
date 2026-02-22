@@ -38,12 +38,12 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
     {
         try
         {
-            IAsyncEnumerable<RoomStateSnapshot> appResponseStream = _dungeonController.SubscribeRoomAsync(
+            IAsyncEnumerable<RoomPlayerUpdate> appResponseStream = _dungeonController.SubscribeRoomAsync(
                 request.PlayerId,
                 request.RoomId,
                 context.CancellationToken);
 
-            await foreach (RoomStateSnapshot roomUpdate in appResponseStream)
+            await foreach (RoomPlayerUpdate roomUpdate in appResponseStream)
             {
                 var grpcResponse = new RoomSnapshot { RoomId = roomUpdate.RoomId };
 

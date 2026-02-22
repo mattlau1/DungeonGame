@@ -523,13 +523,13 @@ public class MovementManagerTests
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, observerPlayer.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var oldRoomSnapshots = new List<RoomStateSnapshot>();
+        var oldRoomSnapshots = new List<RoomPlayerUpdate>();
 
         Task subscriptionTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.RoomStore.SubscribeRoomAsync(
                                    observerPlayer.PlayerId,
                                    roomSnapshot1.RoomId,
                                    cts.Token))
@@ -580,13 +580,13 @@ public class MovementManagerTests
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot2.RoomId, observerPlayer.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var newRoomSnapshots = new List<RoomStateSnapshot>();
+        var newRoomSnapshots = new List<RoomPlayerUpdate>();
 
         Task subscriptionTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.RoomStore.SubscribeRoomAsync(
                                    observerPlayer.PlayerId,
                                    roomSnapshot2.RoomId,
                                    cts.Token))
@@ -641,14 +641,14 @@ public class MovementManagerTests
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot2.RoomId, observerInNewRoom.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var oldRoomSnapshots = new List<RoomStateSnapshot>();
-        var newRoomSnapshots = new List<RoomStateSnapshot>();
+        var oldRoomSnapshots = new List<RoomPlayerUpdate>();
+        var newRoomSnapshots = new List<RoomPlayerUpdate>();
 
         Task oldRoomTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.RoomStore.SubscribeRoomAsync(
                                    observerInOldRoom.PlayerId,
                                    roomSnapshot1.RoomId,
                                    cts.Token))
@@ -666,7 +666,7 @@ public class MovementManagerTests
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.RoomStore.SubscribeRoomAsync(
                                    observerInNewRoom.PlayerId,
                                    roomSnapshot2.RoomId,
                                    cts.Token))
@@ -718,13 +718,13 @@ public class MovementManagerTests
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot2.RoomId, observerPlayer.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var room2Snapshots = new List<RoomStateSnapshot>();
+        var room2Snapshots = new List<RoomPlayerUpdate>();
 
         Task subscriptionTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.RoomStore.SubscribeRoomAsync(
                                    observerPlayer.PlayerId,
                                    roomSnapshot2.RoomId,
                                    cts.Token))
@@ -771,13 +771,13 @@ public class MovementManagerTests
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, movingPlayer.PlayerId, CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var movingPlayerSnapshots = new List<RoomStateSnapshot>();
+        var movingPlayerSnapshots = new List<RoomPlayerUpdate>();
 
         Task subscriptionTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomStateSnapshot snap in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (RoomPlayerUpdate snap in deps.RoomStore.SubscribeRoomAsync(
                                    movingPlayer.PlayerId,
                                    roomSnapshot2.RoomId,
                                    cts.Token))

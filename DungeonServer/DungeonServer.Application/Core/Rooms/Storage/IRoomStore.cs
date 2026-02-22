@@ -18,5 +18,5 @@ public interface IRoomStore
 
     Task SwapRoomsAsync(int playerId, int fromRoomId, int toRoomId, CancellationToken ct);
 
-    IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(int subscriberPlayerId, int roomId, CancellationToken ct);
+    IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(int subscriberPlayerId, int roomId, CancellationToken ct);
 }
