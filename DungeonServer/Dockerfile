@@ -1,8 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY ["DungeonServer/DungeonServer.Service/DungeonServer.Service.csproj", "DungeonServer/DungeonServer.Service/"]
+COPY ["DungeonServer/DungeonServer.Contracts/DungeonServer.Contracts.csproj", "DungeonServer/DungeonServer.Contracts/"]
 COPY ["DungeonServer/DungeonServer.Application/DungeonServer.Application.csproj", "DungeonServer/DungeonServer.Application/"]
+COPY ["DungeonServer/DungeonServer.Infrastructure/DungeonServer.Infrastructure.csproj", "DungeonServer/DungeonServer.Infrastructure/"]
+COPY ["DungeonServer/DungeonServer.Service/DungeonServer.Service.csproj", "DungeonServer/DungeonServer.Service/"]
 RUN dotnet restore "DungeonServer/DungeonServer.Service/DungeonServer.Service.csproj"
 
 COPY ["contracts/", "contracts/"]
