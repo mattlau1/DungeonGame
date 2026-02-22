@@ -13,8 +13,7 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
     private sealed class RoomChannel
     {
-        public Channel<RoomUpdate> UpdateChannel { get; } = Channel.CreateBounded<RoomUpdate>(
-            new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
+        public ConcurrentDictionary<Guid, (Channel<RoomUpdate> Channel, int PlayerId)> SubscriberChannels { get; } = new();
 
         public RoomPlayerUpdate? CurrentState { get; set; }
 
@@ -41,18 +40,26 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
         }
 
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
+
+        Guid connectionId = Guid.NewGuid();
+
+        var subscriberChannel = Channel.CreateBounded<RoomUpdate>(
+            new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
+
+        room.SubscriberChannels.TryAdd(connectionId, (subscriberChannel, subscriberPlayerId));
         Interlocked.Increment(ref room.SubscriberCount);
+
+        if (room.CurrentState != null)
+        {
+            subscriberChannel.Writer.TryWrite(new RoomUpdate(room.CurrentState, RoomUpdateContext.Broadcast()));
+        }
 
         try
         {
-            if (room.CurrentState != null)
+            await foreach (RoomUpdate update in subscriberChannel.Reader.ReadAllAsync(ct))
             {
-                yield return room.CurrentState;
-            }
-
-            await foreach (RoomUpdate update in room.UpdateChannel.Reader.ReadAllAsync(ct))
-            {
-                if (update.Context.ExcludePlayerId != subscriberPlayerId)
+                if (room.SubscriberChannels.TryGetValue(connectionId, out var subscriber) &&
+                    update.Context.ExcludePlayerId != subscriber.PlayerId)
                 {
                     yield return update.Update;
                 }
@@ -60,6 +67,7 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
         }
         finally
         {
+            room.SubscriberChannels.TryRemove(connectionId, out _);
             if (Interlocked.Decrement(ref room.SubscriberCount) == 0)
             {
                 _rooms.TryRemove(roomId, out _);
@@ -79,8 +87,9 @@ public sealed class RoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
         var roomUpdate = new RoomUpdate(update, context);
 
-        while (!room.UpdateChannel.Writer.TryWrite(roomUpdate))
+        foreach (var subscriber in room.SubscriberChannels.Values)
         {
+            subscriber.Channel.Writer.TryWrite(roomUpdate);
         }
 
         return Task.CompletedTask;
