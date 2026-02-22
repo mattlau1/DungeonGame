@@ -44,7 +44,7 @@ public static class TestHelpers
         DungeonController Controller,
         InMemoryRoomStore RoomStore,
         InMemoryPlayerStore PlayerStore,
-        InMemoryRoomSubscriptionRegistry Registry,
+        RoomSubscriptionRegistry Registry,
         MovementManager MovementManager,
         DungeonArchitect Architect,
         PlayerManager PlayerManager);
@@ -56,7 +56,7 @@ public static class TestHelpers
             .AddSingleton<IPlayerStore>(playerStore)
             .BuildServiceProvider();
         var scopeFactory = new FakeScopeFactory(serviceProvider);
-        var registry = new InMemoryRoomSubscriptionRegistry(playerStore);
+        var registry = new RoomSubscriptionRegistry(playerStore);
         var roomStore = new InMemoryRoomStore(registry, playerStore);
         var movementManager = new MovementManager(playerStore, roomStore);
         var architect = new DungeonArchitect(roomStore);
