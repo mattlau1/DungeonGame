@@ -16,8 +16,6 @@ public sealed class InMemoryRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         public ConcurrentDictionary<Guid, (Channel<RoomUpdate> Channel, int PlayerId)> SubscriberChannels { get; } = new();
 
         public RoomPlayerUpdate? CurrentState { get; set; }
-
-        public int SubscriberCount;
     }
 
     private readonly ConcurrentDictionary<int, RoomChannel> _rooms = new();
@@ -47,7 +45,6 @@ public sealed class InMemoryRoomSubscriptionRegistry : IRoomSubscriptionRegistry
             new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
 
         room.SubscriberChannels.TryAdd(connectionId, (subscriberChannel, subscriberPlayerId));
-        Interlocked.Increment(ref room.SubscriberCount);
 
         if (room.CurrentState != null)
         {
@@ -67,7 +64,7 @@ public sealed class InMemoryRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         finally
         {
             room.SubscriberChannels.TryRemove(connectionId, out _);
-            if (Interlocked.Decrement(ref room.SubscriberCount) == 0)
+            if (room.SubscriberChannels.IsEmpty)
             {
                 _rooms.TryRemove(roomId, out _);
             }
@@ -79,7 +76,7 @@ public sealed class InMemoryRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
         room.CurrentState = update;
 
-        if (room.SubscriberCount <= 0)
+        if (room.SubscriberChannels.IsEmpty)
         {
             return Task.CompletedTask;
         }
