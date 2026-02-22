@@ -98,7 +98,10 @@ public sealed class InMemoryRoomStoreTests
         RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
         var player = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
-        RoomStateSnapshot updated = await deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, player.PlayerId, CancellationToken.None);
+        RoomStateSnapshot updated = await deps.RoomStore.AddPlayerToRoomAsync(
+            created.RoomId,
+            player.PlayerId,
+            CancellationToken.None);
 
         Assert.Equal(created.RoomId, updated.RoomId);
         Assert.Contains(player.PlayerId, updated.Players.Select(p => p.PlayerId));
@@ -113,7 +116,10 @@ public sealed class InMemoryRoomStoreTests
         var player = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, player.PlayerId, CancellationToken.None);
 
-        RoomStateSnapshot updated = await deps.RoomStore.RemovePlayerFromRoomAsync(created.RoomId, player.PlayerId, CancellationToken.None);
+        RoomStateSnapshot updated = await deps.RoomStore.RemovePlayerFromRoomAsync(
+            created.RoomId,
+            player.PlayerId,
+            CancellationToken.None);
 
         Assert.Equal(created.RoomId, updated.RoomId);
         Assert.DoesNotContain(player.PlayerId, updated.Players.Select(p => p.PlayerId));
@@ -148,8 +154,8 @@ public sealed class InMemoryRoomStoreTests
             players.Add(await deps.PlayerStore.CreatePlayerAsync(new Location(i, 0), CancellationToken.None));
         }
 
-        Task[] tasks = players
-            .Select(p => deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, p.PlayerId, CancellationToken.None))
+        Task[] tasks = players.Select(p =>
+                deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, p.PlayerId, CancellationToken.None))
             .ToArray();
 
         await Task.WhenAll(tasks);

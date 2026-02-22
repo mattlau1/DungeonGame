@@ -23,7 +23,10 @@ public class RoomSubscriptionBehaviorTests
         {
             try
             {
-                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(player.PlayerId, 999, cts.Token))
+                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(
+                                   player.PlayerId,
+                                   999,
+                                   cts.Token))
                 {
                     snapshots.Add(snapshot);
                 }
@@ -170,7 +173,11 @@ public class RoomSubscriptionBehaviorTests
         Assert.Equal(2, snapshots[2].Players.Count);
         Assert.Equal(3, snapshots[3].Players.Count);
         Assert.Equal(new[] { player10.PlayerId }, snapshots[1].Players.Select(p => p.PlayerId).ToArray());
-        Assert.Equal(new[] { player10.PlayerId, player20.PlayerId }, snapshots[2].Players.Select(p => p.PlayerId).ToArray());
-        Assert.Equal(new[] { player10.PlayerId, player20.PlayerId, player30.PlayerId }, snapshots[3].Players.Select(p => p.PlayerId).ToArray());
+        Assert.Equal(
+            new[] { player10.PlayerId, player20.PlayerId },
+            snapshots[2].Players.Select(p => p.PlayerId).ToArray());
+        Assert.Equal(
+            new[] { player10.PlayerId, player20.PlayerId, player30.PlayerId },
+            snapshots[3].Players.Select(p => p.PlayerId).ToArray());
     }
 }

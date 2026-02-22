@@ -25,12 +25,13 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
     {
         _options = new DbContextOptionsBuilder<DungeonDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+            .ConfigureWarnings(w =>
+                w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         _dbContext = new DungeonDbContext(_options);
         _playerStore = new EfPlayerStore(_dbContext);
-        
+
         _registry = new InMemoryRoomSubscriptionRegistry(_playerStore);
         _roomStore = new EfRoomStore(_dbContext, _registry);
     }
@@ -63,8 +64,9 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
     public async Task AddPlayerToRoom_Persists_AcrossNewContext()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
-        
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
+
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(new Location(5f, 5f), CancellationToken.None);
 
         await _roomStore.AddPlayerToRoomAsync(room.RoomId, player.PlayerId, CancellationToken.None);
@@ -83,8 +85,9 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
     public async Task RemovePlayerFromRoom_Persists_AcrossNewContext()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
-        
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
+
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(new Location(5f, 5f), CancellationToken.None);
 
         await _roomStore.AddPlayerToRoomAsync(room.RoomId, player.PlayerId, CancellationToken.None);
@@ -104,9 +107,11 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
     public async Task LinkRooms_Persists_AcrossNewContext()
     {
         RoomStateSnapshot roomA = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
         RoomStateSnapshot roomB = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
 
         await _roomStore.LinkRoomsAsync(roomA.RoomId, roomB.RoomId, Direction.East, CancellationToken.None);
 
@@ -129,10 +134,12 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
     public async Task SwapRooms_Persists_AcrossNewContext()
     {
         RoomStateSnapshot roomA = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
         RoomStateSnapshot roomB = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
-        
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
+
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(new Location(5f, 5f), CancellationToken.None);
 
         await _roomStore.AddPlayerToRoomAsync(roomA.RoomId, player.PlayerId, CancellationToken.None);
@@ -155,12 +162,15 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
     public async Task MultiplePlayersInRoom_Persists_AcrossNewContext()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
-        
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
+
         var players = new List<PlayerSnapshot>();
         for (int i = 0; i < 5; i++)
         {
-            PlayerSnapshot p = await _playerStore.CreatePlayerAsync(new Location((float)i, (float)i), CancellationToken.None);
+            PlayerSnapshot p = await _playerStore.CreatePlayerAsync(
+                new Location((float)i, (float)i),
+                CancellationToken.None);
             players.Add(p);
             await _roomStore.AddPlayerToRoomAsync(room.RoomId, p.PlayerId, CancellationToken.None);
         }

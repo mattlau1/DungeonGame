@@ -24,12 +24,13 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
     {
         _options = new DbContextOptionsBuilder<DungeonDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+            .ConfigureWarnings(w =>
+                w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         _dbContext = new DungeonDbContext(_options);
         _playerStore = new EfPlayerStore(_dbContext);
-        
+
         _registry = new InMemoryRoomSubscriptionRegistry(_playerStore);
         _roomStore = new EfRoomStore(_dbContext, _registry);
     }
@@ -43,7 +44,8 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
     public async Task AddPlayerToRoom_ThrowsKeyNotFound_WhenPlayerDoesNotExist()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _roomStore.AddPlayerToRoomAsync(room.RoomId, 99999, CancellationToken.None));
@@ -53,8 +55,9 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
     public async Task RemovePlayerFromRoom_ThrowsArgumentException_WhenPlayerNotInRoom()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
-        
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
+
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(new Location(5f, 5f), CancellationToken.None);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
@@ -65,70 +68,98 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
     public async Task LinkRooms_ThrowsKeyNotFound_WhenRoomDoesNotExist()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _roomStore.LinkRoomsAsync(room.RoomId, 99999, Direction.East, CancellationToken.None));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _roomStore.LinkRoomsAsync(
+            room.RoomId,
+            99999,
+            Direction.East,
+            CancellationToken.None));
     }
 
     [Fact]
     public async Task LinkRooms_ThrowsArgumentException_WhenLinkingRoomToItself()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
-            _roomStore.LinkRoomsAsync(room.RoomId, room.RoomId, Direction.East, CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentException>(() => _roomStore.LinkRoomsAsync(
+            room.RoomId,
+            room.RoomId,
+            Direction.East,
+            CancellationToken.None));
     }
 
     [Fact]
     public async Task SwapRooms_ThrowsKeyNotFound_WhenFromRoomDoesNotExist()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
-        
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
+
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(new Location(5f, 5f), CancellationToken.None);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _roomStore.SwapRoomsAsync(player.PlayerId, 99999, room.RoomId, CancellationToken.None));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _roomStore.SwapRoomsAsync(
+            player.PlayerId,
+            99999,
+            room.RoomId,
+            CancellationToken.None));
     }
 
     [Fact]
     public async Task SwapRooms_ThrowsKeyNotFound_WhenToRoomDoesNotExist()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
-        
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
+
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(new Location(5f, 5f), CancellationToken.None);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _roomStore.SwapRoomsAsync(player.PlayerId, room.RoomId, 99999, CancellationToken.None));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _roomStore.SwapRoomsAsync(
+            player.PlayerId,
+            room.RoomId,
+            99999,
+            CancellationToken.None));
     }
 
     [Fact]
     public async Task SwapRooms_ThrowsKeyNotFound_WhenPlayerNotInFromRoom()
     {
         RoomStateSnapshot roomA = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
         RoomStateSnapshot roomB = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
-        
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
+
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(new Location(5f, 5f), CancellationToken.None);
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _roomStore.SwapRoomsAsync(player.PlayerId, roomA.RoomId, roomB.RoomId, CancellationToken.None));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _roomStore.SwapRoomsAsync(
+            player.PlayerId,
+            roomA.RoomId,
+            roomB.RoomId,
+            CancellationToken.None));
     }
 
     [Fact]
     public async Task AddPlayerToRoom_AlreadyInRoom_ReturnsSnapshotWithoutAddingDuplicate()
     {
         RoomStateSnapshot room = await _roomStore.CreateRoomAsync(
-            new RoomState(RoomType.Combat, 10, 10), CancellationToken.None);
-        
+            new RoomState(RoomType.Combat, 10, 10),
+            CancellationToken.None);
+
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(new Location(5f, 5f), CancellationToken.None);
 
-        RoomStateSnapshot first = await _roomStore.AddPlayerToRoomAsync(room.RoomId, player.PlayerId, CancellationToken.None);
-        RoomStateSnapshot second = await _roomStore.AddPlayerToRoomAsync(room.RoomId, player.PlayerId, CancellationToken.None);
+        RoomStateSnapshot first = await _roomStore.AddPlayerToRoomAsync(
+            room.RoomId,
+            player.PlayerId,
+            CancellationToken.None);
+        RoomStateSnapshot second = await _roomStore.AddPlayerToRoomAsync(
+            room.RoomId,
+            player.PlayerId,
+            CancellationToken.None);
 
         Assert.Single(first.Players);
         Assert.Single(second.Players);

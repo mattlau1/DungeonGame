@@ -36,7 +36,9 @@ public static class TestHelpers
                 ServiceProvider = serviceProvider;
             }
 
-            public void Dispose() { }
+            public void Dispose()
+            {
+            }
         }
     }
 
@@ -52,9 +54,7 @@ public static class TestHelpers
     public static ControllerDependencies CreateControllerDependencies()
     {
         var playerStore = new InMemoryPlayerStore();
-        var serviceProvider = new ServiceCollection()
-            .AddSingleton<IPlayerStore>(playerStore)
-            .BuildServiceProvider();
+        var serviceProvider = new ServiceCollection().AddSingleton<IPlayerStore>(playerStore).BuildServiceProvider();
         var scopeFactory = new FakeScopeFactory(serviceProvider);
         var registry = new InMemoryRoomSubscriptionRegistry(playerStore);
         var roomStore = new InMemoryRoomStore(registry, playerStore);

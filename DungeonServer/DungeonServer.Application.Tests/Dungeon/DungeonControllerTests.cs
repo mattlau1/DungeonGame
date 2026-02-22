@@ -36,8 +36,9 @@ public static class DungeonControllerTests
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult result = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
-            PlayerInfoResult playerInfo =
-                await deps.Controller.GetPlayerInfoAsync(result.PlayerInfo.Id, CancellationToken.None);
+            PlayerInfoResult playerInfo = await deps.Controller.GetPlayerInfoAsync(
+                result.PlayerInfo.Id,
+                CancellationToken.None);
 
             Assert.Equal(result.PlayerInfo.Id, playerInfo.PlayerInfo.Id);
             Assert.Equal(result.RoomId, playerInfo.RoomId);
@@ -133,8 +134,7 @@ public static class DungeonControllerTests
             using var cts = new CancellationTokenSource();
             await cts.CancelAsync();
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-                deps.Controller.SpawnPlayerAsync(cts.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => deps.Controller.SpawnPlayerAsync(cts.Token));
         }
     }
 
@@ -146,8 +146,9 @@ public static class DungeonControllerTests
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
-            PlayerInfoResult info =
-                await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
+            PlayerInfoResult info = await deps.Controller.GetPlayerInfoAsync(
+                spawned.PlayerInfo.Id,
+                CancellationToken.None);
 
             Assert.NotNull(info);
             Assert.Equal(spawned.PlayerInfo.Id, info.PlayerInfo.Id);
@@ -170,13 +171,15 @@ public static class DungeonControllerTests
         {
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-            PlayerInfoResult initialInfo =
-                await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
+            PlayerInfoResult initialInfo = await deps.Controller.GetPlayerInfoAsync(
+                spawned.PlayerInfo.Id,
+                CancellationToken.None);
 
             await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
 
-            PlayerInfoResult updatedInfo =
-                await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
+            PlayerInfoResult updatedInfo = await deps.Controller.GetPlayerInfoAsync(
+                spawned.PlayerInfo.Id,
+                CancellationToken.None);
 
             Assert.NotEqual(initialInfo.PlayerInfo.Location.X, updatedInfo.PlayerInfo.Location.X);
             Assert.Equal(initialInfo.PlayerInfo.Location.X + 1f, updatedInfo.PlayerInfo.Location.X);
@@ -192,8 +195,11 @@ public static class DungeonControllerTests
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
-            MovementInputResponse response =
-                await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
+            MovementInputResponse response = await deps.Controller.SetMovementInputAsync(
+                spawned.PlayerInfo.Id,
+                1f,
+                0f,
+                CancellationToken.None);
 
             Assert.Equal(MovementRequestStatus.Ok, response.Status);
         }
@@ -203,13 +209,15 @@ public static class DungeonControllerTests
         {
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-            PlayerInfoResult initialInfo =
-                await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
+            PlayerInfoResult initialInfo = await deps.Controller.GetPlayerInfoAsync(
+                spawned.PlayerInfo.Id,
+                CancellationToken.None);
 
             await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 2f, 3f, CancellationToken.None);
 
-            PlayerInfoResult updatedInfo =
-                await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
+            PlayerInfoResult updatedInfo = await deps.Controller.GetPlayerInfoAsync(
+                spawned.PlayerInfo.Id,
+                CancellationToken.None);
 
             Assert.Equal(initialInfo.PlayerInfo.Location.X + 2f, updatedInfo.PlayerInfo.Location.X);
             Assert.Equal(initialInfo.PlayerInfo.Location.Y + 3f, updatedInfo.PlayerInfo.Location.Y);
@@ -221,8 +229,11 @@ public static class DungeonControllerTests
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
-            MovementInputResponse response =
-                await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 100f, 0f, CancellationToken.None);
+            MovementInputResponse response = await deps.Controller.SetMovementInputAsync(
+                spawned.PlayerInfo.Id,
+                100f,
+                0f,
+                CancellationToken.None);
 
             Assert.Equal(MovementRequestStatus.TooFast, response.Status);
         }
@@ -232,13 +243,15 @@ public static class DungeonControllerTests
         {
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfoResult spawned = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-            PlayerInfoResult initialInfo =
-                await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
+            PlayerInfoResult initialInfo = await deps.Controller.GetPlayerInfoAsync(
+                spawned.PlayerInfo.Id,
+                CancellationToken.None);
 
             await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 100f, 0f, CancellationToken.None);
 
-            PlayerInfoResult updatedInfo =
-                await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
+            PlayerInfoResult updatedInfo = await deps.Controller.GetPlayerInfoAsync(
+                spawned.PlayerInfo.Id,
+                CancellationToken.None);
 
             Assert.Equal(initialInfo.PlayerInfo.Location.X, updatedInfo.PlayerInfo.Location.X);
             Assert.Equal(initialInfo.PlayerInfo.Location.Y, updatedInfo.PlayerInfo.Location.Y);
@@ -263,8 +276,9 @@ public static class DungeonControllerTests
             await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
             await deps.Controller.SetMovementInputAsync(spawned.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
 
-            PlayerInfoResult info =
-                await deps.Controller.GetPlayerInfoAsync(spawned.PlayerInfo.Id, CancellationToken.None);
+            PlayerInfoResult info = await deps.Controller.GetPlayerInfoAsync(
+                spawned.PlayerInfo.Id,
+                CancellationToken.None);
 
             float initialX = spawned.PlayerInfo.Location.X;
             Assert.Equal(initialX + 3f, info.PlayerInfo.Location.X);
@@ -285,7 +299,8 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate _ in deps.Controller.SubscribeRoomAsync(spawned.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate _ in deps.Controller.SubscribeRoomAsync(
+                                       spawned.PlayerInfo.Id,
                                        spawned.RoomId,
                                        cts.Token))
                     {
@@ -314,13 +329,13 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
                         snapshots.Add(snap);
-                        if (snapshots.Count >= 1)
-                            break;
+                        if (snapshots.Count >= 1) break;
                     }
                 }
                 catch (OperationCanceledException)
@@ -351,13 +366,13 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
                         snapshots1.Add(snap);
-                        if (snapshots1.Count >= 1)
-                            break;
+                        if (snapshots1.Count >= 1) break;
                     }
                 }
                 catch (OperationCanceledException)
@@ -370,13 +385,13 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player2.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player2.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
                         snapshots2.Add(snap);
-                        if (snapshots2.Count >= 1)
-                            break;
+                        if (snapshots2.Count >= 1) break;
                     }
                 }
                 catch (OperationCanceledException)
@@ -408,13 +423,13 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
                         snapshots.Add(snap);
-                        if (snapshots.Count >= 1)
-                            break;
+                        if (snapshots.Count >= 1) break;
                     }
                 }
                 catch (OperationCanceledException)
@@ -438,8 +453,15 @@ public static class DungeonControllerTests
             int roomId = player.RoomId;
 
             await Task.Delay(100);
-            var snapshot1 = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
-            await deps.Registry.PublishUpdateAsync(roomId, snapshot1, RoomUpdateContext.Broadcast(), CancellationToken.None);
+            var snapshot1 = new RoomPlayerUpdate
+            {
+                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
+            };
+            await deps.Registry.PublishUpdateAsync(
+                roomId,
+                snapshot1,
+                RoomUpdateContext.Broadcast(),
+                CancellationToken.None);
 
             await Task.Delay(100);
 
@@ -450,7 +472,8 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -463,14 +486,20 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            var snapshot2 = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
+            var snapshot2 = new RoomPlayerUpdate
+            {
+                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
+            };
             await deps.Registry.PublishUpdateAsync(roomId, snapshot2, RoomUpdateContext.Broadcast(), cts.Token);
 
             await Task.Delay(50);
             await cts.CancelAsync();
 
             await Task.Delay(100);
-            var snapshot3 = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
+            var snapshot3 = new RoomPlayerUpdate
+            {
+                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
+            };
             await deps.Registry.PublishUpdateAsync(roomId, snapshot3, RoomUpdateContext.Broadcast(), cts.Token);
 
             await Task.Delay(100);
@@ -492,8 +521,10 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player.PlayerInfo.Id,
-                                       999, cts.Token))
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player.PlayerInfo.Id,
+                                       999,
+                                       cts.Token))
                     {
                         snapshots.Add(snap);
                     }
@@ -545,8 +576,13 @@ public static class DungeonControllerTests
             int roomId = player.RoomId;
 
             await Task.Delay(100);
-            var excludedSnapshot = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = player.PlayerInfo.Id };
-            await deps.Registry.PublishUpdateAsync(roomId, excludedSnapshot,
+            var excludedSnapshot = new RoomPlayerUpdate
+            {
+                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = player.PlayerInfo.Id
+            };
+            await deps.Registry.PublishUpdateAsync(
+                roomId,
+                excludedSnapshot,
                 RoomUpdateContext.ExcludePlayer(player.PlayerInfo.Id),
                 CancellationToken.None);
 
@@ -559,7 +595,8 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -595,7 +632,8 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player2.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player2.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
@@ -612,8 +650,11 @@ public static class DungeonControllerTests
             await Task.Delay(100);
 
             // Player 1 moves - this should generate an update excluded for player 1 but sent to player 2
-            MovementInputResponse moveResult = 
-                await deps.Controller.SetMovementInputAsync(player1.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
+            MovementInputResponse moveResult = await deps.Controller.SetMovementInputAsync(
+                player1.PlayerInfo.Id,
+                1f,
+                0f,
+                CancellationToken.None);
 
             await subscriptionTask;
 
@@ -640,13 +681,13 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
                         snapshots.Add(snap);
-                        if (snapshots.Count >= 2)
-                            break;
+                        if (snapshots.Count >= 2) break;
                     }
                 }
                 catch (OperationCanceledException)
@@ -655,8 +696,15 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            var moveSnapshot = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
-            await deps.Registry.PublishUpdateAsync(roomId, moveSnapshot, RoomUpdateContext.Broadcast(), CancellationToken.None);
+            var moveSnapshot = new RoomPlayerUpdate
+            {
+                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
+            };
+            await deps.Registry.PublishUpdateAsync(
+                roomId,
+                moveSnapshot,
+                RoomUpdateContext.Broadcast(),
+                CancellationToken.None);
 
             await Task.Delay(50);
             await deps.Controller.SetMovementInputAsync(player2.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
@@ -681,13 +729,13 @@ public static class DungeonControllerTests
             {
                 try
                 {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(player1.PlayerInfo.Id,
+                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                                       player1.PlayerInfo.Id,
                                        roomId,
                                        cts.Token))
                     {
                         player1Snapshots.Add(snap);
-                        if (player1Snapshots.Count >= 2)
-                            break;
+                        if (player1Snapshots.Count >= 2) break;
                     }
                 }
                 catch (OperationCanceledException)
@@ -696,12 +744,22 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            var moveSnapshot = new RoomPlayerUpdate { RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null };
-            await deps.Registry.PublishUpdateAsync(roomId, moveSnapshot, RoomUpdateContext.Broadcast(), CancellationToken.None);
+            var moveSnapshot = new RoomPlayerUpdate
+            {
+                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
+            };
+            await deps.Registry.PublishUpdateAsync(
+                roomId,
+                moveSnapshot,
+                RoomUpdateContext.Broadcast(),
+                CancellationToken.None);
 
             await Task.Delay(50);
-            MovementInputResponse moveResult =
-                await deps.Controller.SetMovementInputAsync(player2.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
+            MovementInputResponse moveResult = await deps.Controller.SetMovementInputAsync(
+                player2.PlayerInfo.Id,
+                1f,
+                0f,
+                CancellationToken.None);
 
             await subscriptionTask;
 

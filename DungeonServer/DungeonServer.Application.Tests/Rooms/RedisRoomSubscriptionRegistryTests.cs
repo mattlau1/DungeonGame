@@ -24,7 +24,7 @@ public class RedisRoomSubscriptionRegistryTests
     {
         _redisConnection = new InMemoryRedisConnection();
         _playerStore = new InMemoryPlayerStore();
-        
+
         var services = new ServiceCollection();
         services.AddSingleton<IPlayerStore>(_playerStore);
         _serviceProvider = services.BuildServiceProvider();
@@ -75,7 +75,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         // Start subscription first so room is tracked in _rooms
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        
+
         var snapshots = new List<RoomPlayerUpdate>();
 
         Task enumerateTask = Task.Run(async () =>
@@ -97,19 +97,17 @@ public class RedisRoomSubscriptionRegistryTests
 
         var player1 = new PlayerSnapshot(1, roomId, new Location(1, 1), true);
         var player2 = new PlayerSnapshot(2, roomId, new Location(2, 2), true);
-        
+
         var update = new RoomPlayerUpdate
         {
-            RoomId = roomId,
-            Players = new List<PlayerSnapshot> { player1, player2 },
-            ExcludePlayerId = null
+            RoomId = roomId, Players = new List<PlayerSnapshot> { player1, player2 }, ExcludePlayerId = null
         };
 
         await registry.PublishUpdateAsync(roomId, update, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
         Task timeout = Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
         Task completed = await Task.WhenAny(enumerateTask, timeout);
-        
+
         if (completed == timeout)
         {
             await cts.CancelAsync();
@@ -172,9 +170,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         var update = new RoomPlayerUpdate
         {
-            RoomId = roomId,
-            Players = new List<PlayerSnapshot>(),
-            ExcludePlayerId = null
+            RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
         };
         await registry.PublishUpdateAsync(roomId, update, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
@@ -199,9 +195,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         var initialUpdate = new RoomPlayerUpdate
         {
-            RoomId = roomId,
-            Players = new List<PlayerSnapshot>(),
-            ExcludePlayerId = null
+            RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
         };
         await registry.PublishUpdateAsync(roomId, initialUpdate, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
@@ -228,9 +222,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         var update1 = new RoomPlayerUpdate
         {
-            RoomId = roomId,
-            Players = new List<PlayerSnapshot>(),
-            ExcludePlayerId = null
+            RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
         };
         await registry.PublishUpdateAsync(roomId, update1, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
@@ -241,9 +233,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         var update2 = new RoomPlayerUpdate
         {
-            RoomId = roomId,
-            Players = new List<PlayerSnapshot>(),
-            ExcludePlayerId = null
+            RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
         };
         await registry.PublishUpdateAsync(roomId, update2, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
@@ -264,7 +254,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         // Start subscription first so room is tracked
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        
+
         var snapshots = new List<RoomPlayerUpdate>();
 
         Task task = Task.Run(async () =>
@@ -287,22 +277,22 @@ public class RedisRoomSubscriptionRegistryTests
         // Publish a normal update first to establish state
         var normalUpdate = new RoomPlayerUpdate
         {
-            RoomId = roomId,
-            Players = new List<PlayerSnapshot>(),
-            ExcludePlayerId = null
+            RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
         };
         await registry.PublishUpdateAsync(roomId, normalUpdate, RoomUpdateContext.Broadcast(), CancellationToken.None);
-        
+
         await Task.Delay(50);
 
         // Now publish excluded update - room is tracked so CurrentState gets set
         var excludedUpdate = new RoomPlayerUpdate
         {
-            RoomId = roomId,
-            Players = new List<PlayerSnapshot>(),
-            ExcludePlayerId = playerId
+            RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = playerId
         };
-        await registry.PublishUpdateAsync(roomId, excludedUpdate, RoomUpdateContext.ExcludePlayer(playerId), CancellationToken.None);
+        await registry.PublishUpdateAsync(
+            roomId,
+            excludedUpdate,
+            RoomUpdateContext.ExcludePlayer(playerId),
+            CancellationToken.None);
 
         await Task.Delay(100);
         await cts.CancelAsync();
@@ -322,10 +312,7 @@ public class RedisRoomSubscriptionRegistryTests
         var update = new RoomPlayerUpdate
         {
             RoomId = roomId,
-            Players = new List<PlayerSnapshot>
-            {
-                new PlayerSnapshot(1, roomId, new Location(1, 1), true)
-            },
+            Players = new List<PlayerSnapshot> { new PlayerSnapshot(1, roomId, new Location(1, 1), true) },
             ExcludePlayerId = null
         };
 
@@ -345,10 +332,14 @@ public class InMemoryRedisConnection
     public InMemoryRedisConnection()
     {
         _channels = new ConcurrentDictionary<string, List<Action<RedisChannel, RedisValue>>>();
-        
+
         MockSubscriber = new Mock<ISubscriber>();
-        
-        MockSubscriber.Setup(s => s.SubscribeAsync(It.IsAny<RedisChannel>(), It.IsAny<Action<RedisChannel, RedisValue>>(), It.IsAny<CommandFlags>()))
+
+        MockSubscriber
+            .Setup(s => s.SubscribeAsync(
+                It.IsAny<RedisChannel>(),
+                It.IsAny<Action<RedisChannel, RedisValue>>(),
+                It.IsAny<CommandFlags>()))
             .Callback<RedisChannel, Action<RedisChannel, RedisValue>, CommandFlags>((channel, handler, flags) =>
             {
                 var channelName = channel.ToString();
@@ -360,7 +351,11 @@ public class InMemoryRedisConnection
             })
             .Returns(Task.CompletedTask);
 
-        MockSubscriber.Setup(s => s.UnsubscribeAsync(It.IsAny<RedisChannel>(), It.IsAny<Action<RedisChannel, RedisValue>>(), It.IsAny<CommandFlags>()))
+        MockSubscriber
+            .Setup(s => s.UnsubscribeAsync(
+                It.IsAny<RedisChannel>(),
+                It.IsAny<Action<RedisChannel, RedisValue>>(),
+                It.IsAny<CommandFlags>()))
             .Callback<RedisChannel, Action<RedisChannel, RedisValue>, CommandFlags>((channel, handler, flags) =>
             {
                 var channelName = channel.ToString();
@@ -374,12 +369,13 @@ public class InMemoryRedisConnection
             })
             .Returns(Task.CompletedTask);
 
-        MockSubscriber.Setup(s => s.PublishAsync(It.IsAny<RedisChannel>(), It.IsAny<RedisValue>(), It.IsAny<CommandFlags>()))
+        MockSubscriber
+            .Setup(s => s.PublishAsync(It.IsAny<RedisChannel>(), It.IsAny<RedisValue>(), It.IsAny<CommandFlags>()))
             .Callback<RedisChannel, RedisValue, CommandFlags>((channel, value, flags) =>
             {
                 var channelName = channel.ToString();
                 PublishCount++;
-                
+
                 if (_channels.TryGetValue(channelName, out var handlers))
                 {
                     List<Action<RedisChannel, RedisValue>> handlersCopy;
@@ -387,7 +383,7 @@ public class InMemoryRedisConnection
                     {
                         handlersCopy = new List<Action<RedisChannel, RedisValue>>(handlers);
                     }
-                    
+
                     // Execute handlers asynchronously to avoid blocking
                     Task.Run(() =>
                     {
