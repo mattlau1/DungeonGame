@@ -1,3 +1,4 @@
+using System.Linq;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
@@ -94,8 +95,10 @@ public class RoomSubscriptionBehaviorTests
 
         await Task.Delay(50);
 
-        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom1.RoomId, 100, CancellationToken.None);
-        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom2.RoomId, 200, CancellationToken.None);
+        var player100 = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+        var player200 = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom1.RoomId, player100.PlayerId, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom2.RoomId, player200.PlayerId, CancellationToken.None);
 
         await Task.Delay(100);
         await cts.CancelAsync();
@@ -109,12 +112,12 @@ public class RoomSubscriptionBehaviorTests
         var lastSnapshot2 = snapshots2[^1];
 
         Assert.Equal(createdRoom1.RoomId, lastSnapshot1.RoomId);
-        Assert.Contains(100, lastSnapshot1.PlayerIds);
-        Assert.DoesNotContain(200, lastSnapshot1.PlayerIds);
+        Assert.Contains(player100.PlayerId, lastSnapshot1.Players.Select(p => p.PlayerId));
+        Assert.DoesNotContain(player200.PlayerId, lastSnapshot1.Players.Select(p => p.PlayerId));
 
         Assert.Equal(createdRoom2.RoomId, lastSnapshot2.RoomId);
-        Assert.Contains(200, lastSnapshot2.PlayerIds);
-        Assert.DoesNotContain(100, lastSnapshot2.PlayerIds);
+        Assert.Contains(player200.PlayerId, lastSnapshot2.Players.Select(p => p.PlayerId));
+        Assert.DoesNotContain(player100.PlayerId, lastSnapshot2.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -150,21 +153,24 @@ public class RoomSubscriptionBehaviorTests
 
         await Task.Delay(50);
 
-        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom.RoomId, 10, CancellationToken.None);
+        var player10 = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+        var player20 = await deps.PlayerStore.CreatePlayerAsync(new Location(1, 0), CancellationToken.None);
+        var player30 = await deps.PlayerStore.CreatePlayerAsync(new Location(2, 0), CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom.RoomId, player10.PlayerId, CancellationToken.None);
         await Task.Delay(25);
-        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom.RoomId, 20, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom.RoomId, player20.PlayerId, CancellationToken.None);
         await Task.Delay(25);
-        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom.RoomId, 30, CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(createdRoom.RoomId, player30.PlayerId, CancellationToken.None);
 
         await subscribeTask;
 
         Assert.Equal(4, snapshots.Count);
-        Assert.Empty(snapshots[0].PlayerIds);
-        Assert.Single(snapshots[1].PlayerIds);
-        Assert.Equal(2, snapshots[2].PlayerIds.Count);
-        Assert.Equal(3, snapshots[3].PlayerIds.Count);
-        Assert.Equal(new[] { 10 }, snapshots[1].PlayerIds);
-        Assert.Equal(new[] { 10, 20 }, snapshots[2].PlayerIds);
-        Assert.Equal(new[] { 10, 20, 30 }, snapshots[3].PlayerIds);
+        Assert.Empty(snapshots[0].Players);
+        Assert.Single(snapshots[1].Players);
+        Assert.Equal(2, snapshots[2].Players.Count);
+        Assert.Equal(3, snapshots[3].Players.Count);
+        Assert.Equal(new[] { player10.PlayerId }, snapshots[1].Players.Select(p => p.PlayerId).ToArray());
+        Assert.Equal(new[] { player10.PlayerId, player20.PlayerId }, snapshots[2].Players.Select(p => p.PlayerId).ToArray());
+        Assert.Equal(new[] { player10.PlayerId, player20.PlayerId, player30.PlayerId }, snapshots[3].Players.Select(p => p.PlayerId).ToArray());
     }
 }

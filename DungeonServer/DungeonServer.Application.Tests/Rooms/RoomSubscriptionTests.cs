@@ -87,8 +87,8 @@ public class RoomSubscriptionTests
         else
         {
             await enumerateTask;
-            bool foundCombined = snapshots.Any(s =>
-                s.PlayerIds.Contains(first.PlayerInfo.Id) && s.PlayerIds.Contains(second.PlayerId));
+                bool foundCombined = snapshots.Any(s =>
+                    s.Players.Any(p => p.PlayerId == first.PlayerInfo.Id) && s.Players.Any(p => p.PlayerId == second.PlayerId));
             Assert.True(foundCombined, "Did not observe a snapshot including both players after the second joined");
         }
     }

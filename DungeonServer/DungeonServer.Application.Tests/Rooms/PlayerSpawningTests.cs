@@ -1,3 +1,4 @@
+using System.Linq;
 using DungeonServer.Application.Core.Dungeon.Controllers;
 using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Player.Controllers;
@@ -49,7 +50,7 @@ public class PlayerSpawningTests
 
         Assert.NotNull(room);
         Assert.True(room.RoomId > 0);
-        Assert.Contains(result.PlayerInfo.Id, room.PlayerIds);
+        Assert.Contains(result.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -89,7 +90,7 @@ public class PlayerSpawningTests
 
         RoomStateSnapshot? room = await deps.RoomStore.GetRoomAsync(result.RoomId, CancellationToken.None);
         Assert.NotNull(room);
-        Assert.Contains(result.PlayerInfo.Id, room.PlayerIds);
+        Assert.Contains(result.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -113,9 +114,9 @@ public class PlayerSpawningTests
 
         RoomStateSnapshot? room = await deps.RoomStore.GetRoomAsync(result1.RoomId, CancellationToken.None);
         Assert.NotNull(room);
-        Assert.Equal(2, room.PlayerIds.Count);
-        Assert.Contains(result1.PlayerInfo.Id, room.PlayerIds);
-        Assert.Contains(result2.PlayerInfo.Id, room.PlayerIds);
+        Assert.Equal(2, room.Players.Count);
+        Assert.Contains(result1.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
+        Assert.Contains(result2.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -165,7 +166,7 @@ public class PlayerSpawningTests
 
         RoomStateSnapshot? room = await deps.RoomStore.GetRoomAsync(result.RoomId, CancellationToken.None);
         Assert.NotNull(room);
-        Assert.Contains(result.PlayerInfo.Id, room.PlayerIds);
+        Assert.Contains(result.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -177,8 +178,8 @@ public class PlayerSpawningTests
         RoomStateSnapshot? room = await deps.RoomStore.GetRoomAsync(result.RoomId, CancellationToken.None);
 
         Assert.NotNull(room);
-        Assert.Single(room.PlayerIds);
-        Assert.Contains(result.PlayerInfo.Id, room.PlayerIds);
+        Assert.Single(room.Players.Select(p => p.PlayerId));
+        Assert.Contains(result.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -194,10 +195,10 @@ public class PlayerSpawningTests
 
         RoomStateSnapshot? room = await deps.RoomStore.GetRoomAsync(result1.RoomId, CancellationToken.None);
         Assert.NotNull(room);
-        Assert.Equal(3, room.PlayerIds.Count);
-        Assert.Contains(result1.PlayerInfo.Id, room.PlayerIds);
-        Assert.Contains(result2.PlayerInfo.Id, room.PlayerIds);
-        Assert.Contains(result3.PlayerInfo.Id, room.PlayerIds);
+        Assert.Equal(3, room.Players.Count);
+        Assert.Contains(result1.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
+        Assert.Contains(result2.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
+        Assert.Contains(result3.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -216,8 +217,8 @@ public class PlayerSpawningTests
 
         RoomStateSnapshot? room2 = await deps.RoomStore.GetRoomAsync(result2.RoomId, CancellationToken.None);
         Assert.NotNull(room2);
-        Assert.Single(room2.PlayerIds);
-        Assert.Contains(result2.PlayerInfo.Id, room2.PlayerIds);
+        Assert.Single(room2.Players.Select(p => p.PlayerId));
+        Assert.Contains(result2.PlayerInfo.Id, room2.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -236,7 +237,7 @@ public class PlayerSpawningTests
 
         RoomStateSnapshot? room2 = await deps.RoomStore.GetRoomAsync(result2.RoomId, CancellationToken.None);
         Assert.NotNull(room2);
-        Assert.Single(room2.PlayerIds);
-        Assert.Contains(result2.PlayerInfo.Id, room2.PlayerIds);
+        Assert.Single(room2.Players.Select(p => p.PlayerId));
+        Assert.Contains(result2.PlayerInfo.Id, room2.Players.Select(p => p.PlayerId));
     }
 }

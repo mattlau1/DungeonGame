@@ -1,3 +1,4 @@
+using System.Linq;
 using DungeonServer.Application.Core.Movement.Contracts;
 using DungeonServer.Application.Core.Movement.Controllers;
 using DungeonServer.Application.Core.Movement.Models;
@@ -382,7 +383,7 @@ public class MovementManagerTests
         await manager.SetMovementInput(new MovementInputRequest(player.PlayerId, requested), CancellationToken.None);
 
         RoomStateSnapshot? oldRoom = await deps.RoomStore.GetRoomAsync(roomSnapshot1.RoomId, CancellationToken.None);
-        Assert.DoesNotContain(player.PlayerId, oldRoom!.PlayerIds);
+        Assert.DoesNotContain(player.PlayerId, oldRoom!.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -418,7 +419,7 @@ public class MovementManagerTests
         await manager.SetMovementInput(new MovementInputRequest(player.PlayerId, requested), CancellationToken.None);
 
         RoomStateSnapshot? newRoom = await deps.RoomStore.GetRoomAsync(roomSnapshot2.RoomId, CancellationToken.None);
-        Assert.Contains(player.PlayerId, newRoom!.PlayerIds);
+        Assert.Contains(player.PlayerId, newRoom!.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -552,8 +553,8 @@ public class MovementManagerTests
         await subscriptionTask;
 
         Assert.True(oldRoomSnapshots.Count >= 2);
-        Assert.Contains(movingPlayer.PlayerId, oldRoomSnapshots[0].PlayerIds);
-        Assert.DoesNotContain(movingPlayer.PlayerId, oldRoomSnapshots[^1].PlayerIds);
+        Assert.Contains(movingPlayer.PlayerId, oldRoomSnapshots[0].Players.Select(p => p.PlayerId));
+        Assert.DoesNotContain(movingPlayer.PlayerId, oldRoomSnapshots[^1].Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -609,8 +610,8 @@ public class MovementManagerTests
         await subscriptionTask;
 
         Assert.True(newRoomSnapshots.Count >= 2);
-        Assert.DoesNotContain(movingPlayer.PlayerId, newRoomSnapshots[0].PlayerIds);
-        Assert.Contains(movingPlayer.PlayerId, newRoomSnapshots[^1].PlayerIds);
+        Assert.DoesNotContain(movingPlayer.PlayerId, newRoomSnapshots[0].Players.Select(p => p.PlayerId));
+        Assert.Contains(movingPlayer.PlayerId, newRoomSnapshots[^1].Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -690,8 +691,8 @@ public class MovementManagerTests
 
         Assert.True(oldRoomSnapshots.Count >= 2);
         Assert.True(newRoomSnapshots.Count >= 2);
-        Assert.DoesNotContain(movingPlayer.PlayerId, oldRoomSnapshots[^1].PlayerIds);
-        Assert.Contains(movingPlayer.PlayerId, newRoomSnapshots[^1].PlayerIds);
+        Assert.DoesNotContain(movingPlayer.PlayerId, oldRoomSnapshots[^1].Players.Select(p => p.PlayerId));
+        Assert.Contains(movingPlayer.PlayerId, newRoomSnapshots[^1].Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -747,8 +748,8 @@ public class MovementManagerTests
         await subscriptionTask;
 
         Assert.True(room2Snapshots.Count >= 2, $"Expected at least 2 snapshots but got {room2Snapshots.Count}");
-        Assert.DoesNotContain(movingPlayer.PlayerId, room2Snapshots[0].PlayerIds);
-        Assert.Contains(movingPlayer.PlayerId, room2Snapshots[^1].PlayerIds);
+        Assert.DoesNotContain(movingPlayer.PlayerId, room2Snapshots[0].Players.Select(p => p.PlayerId));
+        Assert.Contains(movingPlayer.PlayerId, room2Snapshots[^1].Players.Select(p => p.PlayerId));
     }
 
     [Fact]

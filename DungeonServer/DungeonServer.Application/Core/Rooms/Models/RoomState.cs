@@ -1,3 +1,5 @@
+using DungeonServer.Application.Core.Player.Models;
+
 namespace DungeonServer.Application.Core.Rooms.Models;
 
 public class RoomState
@@ -10,7 +12,7 @@ public class RoomState
 
     public int Height { get; set; }
 
-    public HashSet<int> PlayerIds { get; set; } = [];
+    public ICollection<PlayerSnapshot> Players { get; set; } = new HashSet<PlayerSnapshot>();
 
     public Dictionary<Direction, int> Exits { get; set; } = [];
     

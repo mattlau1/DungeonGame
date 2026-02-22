@@ -1,9 +1,11 @@
+using System.Linq;
 using DungeonServer.Application.Core.Dungeon.Controllers;
 using DungeonServer.Application.Core.Movement.Contracts;
 using DungeonServer.Application.Core.Movement.Controllers;
 using DungeonServer.Application.Core.Movement.Models;
 using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Player.Controllers;
+using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Models;
@@ -54,7 +56,7 @@ public static class DungeonControllerTests
 
             Assert.NotNull(room);
             Assert.Equal(result.RoomId, room.RoomId);
-            Assert.Contains(result.PlayerInfo.Id, room.PlayerIds);
+            Assert.Contains(result.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
         }
 
         [Fact]
@@ -80,9 +82,9 @@ public static class DungeonControllerTests
             RoomStateSnapshot? room = await deps.RoomStore.GetRoomAsync(result1.RoomId, CancellationToken.None);
 
             Assert.NotNull(room);
-            Assert.Equal(2, room.PlayerIds.Count);
-            Assert.Contains(result1.PlayerInfo.Id, room.PlayerIds);
-            Assert.Contains(result2.PlayerInfo.Id, room.PlayerIds);
+            Assert.Equal(2, room.Players.Count);
+            Assert.Contains(result1.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
+            Assert.Contains(result2.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
         }
 
         [Fact]
@@ -117,10 +119,10 @@ public static class DungeonControllerTests
             RoomStateSnapshot? room = await deps.RoomStore.GetRoomAsync(result1.RoomId, CancellationToken.None);
 
             Assert.NotNull(room);
-            Assert.Equal(3, room.PlayerIds.Count);
-            Assert.Contains(result1.PlayerInfo.Id, room.PlayerIds);
-            Assert.Contains(result2.PlayerInfo.Id, room.PlayerIds);
-            Assert.Contains(result3.PlayerInfo.Id, room.PlayerIds);
+            Assert.Equal(3, room.Players.Count);
+            Assert.Contains(result1.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
+            Assert.Contains(result2.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
+            Assert.Contains(result3.PlayerInfo.Id, room.Players.Select(p => p.PlayerId));
         }
 
         [Fact]
@@ -436,8 +438,8 @@ public static class DungeonControllerTests
             int roomId = player.RoomId;
 
             await Task.Delay(100);
-            var snapshot1 = new RoomStateSnapshot(roomId, RoomType.Combat, 32, 32, new());
-            deps.Registry.PublishUpdate(roomId, snapshot1, RoomUpdateContext.Broadcast());
+            var snapshot1 = new RoomStateSnapshot(roomId, RoomType.Combat, 32, 32, new List<PlayerSnapshot>());
+            await deps.Registry.PublishUpdateAsync(roomId, snapshot1, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
             await Task.Delay(100);
 
@@ -461,15 +463,15 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            var snapshot2 = new RoomStateSnapshot(roomId, RoomType.Combat, 42, 42, new());
-            deps.Registry.PublishUpdate(roomId, snapshot2, RoomUpdateContext.Broadcast());
+            var snapshot2 = new RoomStateSnapshot(roomId, RoomType.Combat, 42, 42, new List<PlayerSnapshot>());
+            await deps.Registry.PublishUpdateAsync(roomId, snapshot2, RoomUpdateContext.Broadcast(), cts.Token);
 
             await Task.Delay(50);
             await cts.CancelAsync();
 
             await Task.Delay(100);
-            var snapshot3 = new RoomStateSnapshot(roomId, RoomType.Combat, 43, 43, new());
-            deps.Registry.PublishUpdate(roomId, snapshot3, RoomUpdateContext.Broadcast());
+            var snapshot3 = new RoomStateSnapshot(roomId, RoomType.Combat, 43, 43, new List<PlayerSnapshot>());
+            await deps.Registry.PublishUpdateAsync(roomId, snapshot3, RoomUpdateContext.Broadcast(), cts.Token);
 
             await Task.Delay(100);
             await subscriptionTask;
@@ -543,9 +545,10 @@ public static class DungeonControllerTests
             int roomId = player.RoomId;
 
             await Task.Delay(100);
-            var excludedSnapshot = new RoomStateSnapshot(roomId, RoomType.Combat, 41, 41, new());
-            deps.Registry.PublishUpdate(roomId, excludedSnapshot,
-                RoomUpdateContext.ExcludePlayer(player.PlayerInfo.Id));
+            var excludedSnapshot = new RoomStateSnapshot(roomId, RoomType.Combat, 41, 41, new List<PlayerSnapshot>());
+            await deps.Registry.PublishUpdateAsync(roomId, excludedSnapshot,
+                RoomUpdateContext.ExcludePlayer(player.PlayerInfo.Id),
+                CancellationToken.None);
 
             await Task.Delay(100);
 
@@ -652,8 +655,8 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            var moveSnapshot = new RoomStateSnapshot(roomId, RoomType.Combat, 42, 42, new());
-            deps.Registry.PublishUpdate(roomId, moveSnapshot, RoomUpdateContext.Broadcast());
+            var moveSnapshot = new RoomStateSnapshot(roomId, RoomType.Combat, 42, 42, new List<PlayerSnapshot>());
+            await deps.Registry.PublishUpdateAsync(roomId, moveSnapshot, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
             await Task.Delay(50);
             await deps.Controller.SetMovementInputAsync(player2.PlayerInfo.Id, 1f, 0f, CancellationToken.None);
@@ -693,8 +696,8 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            var moveSnapshot = new RoomStateSnapshot(roomId, RoomType.Combat, 43, 43, new());
-            deps.Registry.PublishUpdate(roomId, moveSnapshot, RoomUpdateContext.Broadcast());
+            var moveSnapshot = new RoomStateSnapshot(roomId, RoomType.Combat, 43, 43, new List<PlayerSnapshot>());
+            await deps.Registry.PublishUpdateAsync(roomId, moveSnapshot, RoomUpdateContext.Broadcast(), CancellationToken.None);
 
             await Task.Delay(50);
             MovementInputResponse moveResult =
@@ -721,7 +724,7 @@ public static class DungeonControllerTests
             RoomStateSnapshot? room = await deps.RoomStore.GetRoomAsync(player1.RoomId, CancellationToken.None);
 
             Assert.NotNull(room);
-            Assert.Equal(3, room.PlayerIds.Count);
+            Assert.Equal(3, room.Players.Count);
         }
     }
 }

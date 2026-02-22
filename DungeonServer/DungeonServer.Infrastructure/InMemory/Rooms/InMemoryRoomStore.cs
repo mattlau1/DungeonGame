@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using DungeonServer.Application.Core.Player.Models;
+using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
@@ -20,17 +22,17 @@ public class InMemoryRoomStore : IRoomStore
     }
 
     private readonly ConcurrentDictionary<int, LockableRoomState> _roomStates = new();
-
     private readonly IRoomSubscriptionRegistry _subscriptionRegistry;
-
+    private readonly IPlayerStore _playerStore;
     private int _nextRoomId;
 
-    public InMemoryRoomStore(IRoomSubscriptionRegistry subscriptionRegistry)
+    public InMemoryRoomStore(IRoomSubscriptionRegistry subscriptionRegistry, IPlayerStore playerStore)
     {
         _subscriptionRegistry = subscriptionRegistry;
+        _playerStore = playerStore;
     }
 
-    public Task<RoomStateSnapshot> CreateRoomAsync(RoomState room, CancellationToken ct)
+    public async Task<RoomStateSnapshot> CreateRoomAsync(RoomState room, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
@@ -48,9 +50,9 @@ public class InMemoryRoomStore : IRoomStore
         }
 
         RoomStateSnapshot snapshot = RoomStateSnapshot.From(entry.RoomState);
-        _subscriptionRegistry.PublishUpdate(roomId, snapshot, RoomUpdateContext.Broadcast());
+        await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
 
-        return Task.FromResult(snapshot);
+        return snapshot;
     }
 
     public async Task<RoomStateSnapshot> AddPlayerToRoomAsync(int roomId, int playerId, CancellationToken ct)
@@ -62,12 +64,25 @@ public class InMemoryRoomStore : IRoomStore
             throw new KeyNotFoundException($"Room Id {roomId} does not exist.");
         }
 
+        PlayerSnapshot? player = await _playerStore.GetPlayerAsync(playerId, ct);
+        if (player == null)
+        {
+            throw new KeyNotFoundException($"Player {playerId} not found.");
+        }
+
         await room.Gate.WaitAsync(ct);
         try
         {
-            room.RoomState.PlayerIds.Add(playerId);
-            var snapshot = RoomStateSnapshot.From(room.RoomState);
-            _subscriptionRegistry.PublishUpdate(roomId, snapshot, RoomUpdateContext.Broadcast());
+            if (room.RoomState.Players.Any(p => p.PlayerId == playerId))
+            {
+                return RoomStateSnapshot.From(room.RoomState);
+            }
+
+            room.RoomState.Players.Add(player);
+
+            RoomStateSnapshot snapshot = RoomStateSnapshot.From(room.RoomState);
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
+
             return snapshot;
         }
         finally
@@ -88,9 +103,14 @@ public class InMemoryRoomStore : IRoomStore
         await room.Gate.WaitAsync(ct);
         try
         {
-            room.RoomState.PlayerIds.Remove(playerId);
+            PlayerSnapshot? player = room.RoomState.Players.FirstOrDefault(p => p.PlayerId == playerId);
+            if (player != null)
+            {
+                room.RoomState.Players.Remove(player);
+            }
+            
             var snapshot = RoomStateSnapshot.From(room.RoomState);
-            _subscriptionRegistry.PublishUpdate(roomId, snapshot, RoomUpdateContext.Broadcast());
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
             return snapshot;
         }
         finally
@@ -129,7 +149,7 @@ public class InMemoryRoomStore : IRoomStore
         RoomStateSnapshot? snapshot = await GetRoomAsync(roomId, ct);
         if (snapshot != null)
         {
-            _subscriptionRegistry.PublishUpdate(roomId, snapshot, context);
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, context, ct);
         }
     }
 
@@ -157,13 +177,29 @@ public class InMemoryRoomStore : IRoomStore
     {
         ct.ThrowIfCancellationRequested();
 
+        PlayerSnapshot? player = await _playerStore.GetPlayerAsync(playerId, ct);
+        if (player == null)
+        {
+            throw new KeyNotFoundException($"Player {playerId} not found.");
+        }
+
         await SafeUpdateRoomStates(
             fromRoomId,
             toRoomId,
-            (roomA, roomB) =>
+            (fromRoom, toRoom) =>
             {
-                roomA.RoomState.PlayerIds.Remove(playerId);
-                roomB.RoomState.PlayerIds.Add(playerId);
+                PlayerSnapshot? occupant = fromRoom.RoomState.Players.FirstOrDefault(p => p.PlayerId == playerId);
+                if (occupant == null)
+                {
+                    throw new KeyNotFoundException($"Player {playerId} not in source room.");
+                }
+
+                fromRoom.RoomState.Players.Remove(occupant);
+
+                if (toRoom.RoomState.Players.All(p => p.PlayerId != playerId))
+                {
+                    toRoom.RoomState.Players.Add(player);
+                }
             },
             ct);
     }
@@ -204,14 +240,16 @@ public class InMemoryRoomStore : IRoomStore
             {
                 update(roomA, roomB);
 
-                _subscriptionRegistry.PublishUpdate(
+                await _subscriptionRegistry.PublishUpdateAsync(
                     roomIdA,
                     RoomStateSnapshot.From(roomA.RoomState),
-                    RoomUpdateContext.Broadcast());
-                _subscriptionRegistry.PublishUpdate(
+                    RoomUpdateContext.Broadcast(),
+                    ct);
+                await _subscriptionRegistry.PublishUpdateAsync(
                     roomIdB,
                     RoomStateSnapshot.From(roomB.RoomState),
-                    RoomUpdateContext.Broadcast());
+                    RoomUpdateContext.Broadcast(),
+                    ct);
             }
             finally
             {

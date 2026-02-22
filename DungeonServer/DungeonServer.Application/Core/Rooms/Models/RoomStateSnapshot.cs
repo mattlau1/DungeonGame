@@ -1,3 +1,4 @@
+using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Shared;
 
 namespace DungeonServer.Application.Core.Rooms.Models;
@@ -15,17 +16,17 @@ public sealed record RoomStateSnapshot
 
     public int Height { get; init; }
 
-    public HashSet<int> PlayerIds { get; set; } = [];
+    public IReadOnlyCollection<PlayerSnapshot> Players { get; init; } = [];
 
     public IReadOnlyDictionary<Direction, int> Exits { get; init; } = new Dictionary<Direction, int>();
 
-    public RoomStateSnapshot(int roomId, RoomType roomType, int width, int height, HashSet<int> playerIds)
+    public RoomStateSnapshot(int roomId, RoomType roomType, int width, int height, IReadOnlyCollection<PlayerSnapshot> players)
     {
         RoomId = roomId;
         RoomType = roomType;
         Width = width;
         Height = height;
-        PlayerIds = playerIds;
+        Players = players;
         Exits = new Dictionary<Direction, int>();
     }
 
@@ -34,14 +35,14 @@ public sealed record RoomStateSnapshot
         RoomType roomType,
         int width,
         int height,
-        HashSet<int> playerIds,
+        IReadOnlyCollection<PlayerSnapshot> players,
         IReadOnlyDictionary<Direction, int> exits)
     {
         RoomId = roomId;
         RoomType = roomType;
         Width = width;
         Height = height;
-        PlayerIds = playerIds;
+        Players = players;
         Exits = exits;
     }
 
@@ -52,7 +53,7 @@ public sealed record RoomStateSnapshot
             state.RoomType,
             state.Width,
             state.Height,
-            new HashSet<int>(state.PlayerIds),
+            new List<PlayerSnapshot>(state.Players),
             new Dictionary<Direction, int>(state.Exits));
     }
 

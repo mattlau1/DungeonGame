@@ -31,4 +31,5 @@ message RoomSnapshot {
   int32 room_id = 1;
   // uint64 server_tick = 2;
   repeated PlayerInfo players = 3;
+  int32 exclude_player_id = 4;
 }

@@ -1,3 +1,4 @@
+using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Infrastructure.EntityFramework.Entities;
@@ -33,7 +34,7 @@ public class EfRoomStore : IRoomStore
         await _dbContext.SaveChangesAsync(ct);
 
         RoomStateSnapshot roomSnapshot = ToSnapshot(roomEntity);
-        PublishRoomUpdateAsync(roomEntity.Id, roomSnapshot, RoomUpdateContext.Broadcast());
+        PublishRoomUpdateAsync(roomEntity.Id, roomSnapshot, RoomUpdateContext.Broadcast(), ct);
 
         return roomSnapshot;
     }
@@ -70,7 +71,7 @@ public class EfRoomStore : IRoomStore
         await _dbContext.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        PublishRoomUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast());
+        PublishRoomUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
 
         return snapshot;
     }
@@ -101,7 +102,7 @@ public class EfRoomStore : IRoomStore
         await _dbContext.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        PublishRoomUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast());
+        PublishRoomUpdateAsync(roomId, snapshot, RoomUpdateContext.Broadcast(), ct);
 
         return snapshot;
     }
@@ -126,13 +127,17 @@ public class EfRoomStore : IRoomStore
         RoomStateSnapshot? snapshot = await GetRoomAsync(roomId, ct);
         if (snapshot != null)
         {
-            _subscriptionRegistry.PublishUpdate(roomId, snapshot, context);
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, context, ct);
         }
     }
 
-    private void PublishRoomUpdateAsync(int roomId, RoomStateSnapshot snapshot, RoomUpdateContext context)
+    private void PublishRoomUpdateAsync(
+        int roomId,
+        RoomStateSnapshot snapshot,
+        RoomUpdateContext context,
+        CancellationToken ct)
     {
-        _subscriptionRegistry.PublishUpdate(roomId, snapshot, context);
+        _subscriptionRegistry.PublishUpdateAsync(roomId, snapshot, context, ct);
     }
 
     public async Task LinkRoomsAsync(int roomIdA, int roomIdB, Direction directionFromAToB, CancellationToken ct)
@@ -209,8 +214,8 @@ public class EfRoomStore : IRoomStore
         await _dbContext.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        PublishRoomUpdateAsync(fromRoomId, ToSnapshot(fromRoom), RoomUpdateContext.Broadcast());
-        PublishRoomUpdateAsync(toRoomId, ToSnapshot(toRoom), RoomUpdateContext.Broadcast());
+        PublishRoomUpdateAsync(fromRoomId, ToSnapshot(fromRoom), RoomUpdateContext.Broadcast(), ct);
+        PublishRoomUpdateAsync(toRoomId, ToSnapshot(toRoom), RoomUpdateContext.Broadcast(), ct);
     }
 
     public IAsyncEnumerable<RoomStateSnapshot> SubscribeRoomAsync(
@@ -223,7 +228,10 @@ public class EfRoomStore : IRoomStore
 
     private static RoomStateSnapshot ToSnapshot(RoomEntity roomEntity)
     {
-        var playerIds = new HashSet<int>(roomEntity.Occupants.Select(p => p.Id));
+        var players = roomEntity.Occupants
+            .Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline))
+            .ToList();
+
         Dictionary<Direction, int> exits = roomEntity.Exits.ToDictionary(e => e.ExitDirection, e => e.ToRoomId);
 
         return new RoomStateSnapshot(
@@ -231,7 +239,7 @@ public class EfRoomStore : IRoomStore
             roomEntity.Type,
             roomEntity.Width,
             roomEntity.Height,
-            playerIds,
+            players,
             exits);
     }
 }

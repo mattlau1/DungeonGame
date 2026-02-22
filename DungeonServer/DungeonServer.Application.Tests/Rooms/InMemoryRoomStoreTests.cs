@@ -1,5 +1,8 @@
+using System.Linq;
+using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
+using DungeonServer.Application.Core.Shared;
 using Xunit;
 
 namespace DungeonServer.Application.Tests.Rooms;
@@ -94,10 +97,11 @@ public sealed class InMemoryRoomStoreTests
 
         RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
 
-        RoomStateSnapshot updated = await deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, 42, CancellationToken.None);
+        var player = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+        RoomStateSnapshot updated = await deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, player.PlayerId, CancellationToken.None);
 
         Assert.Equal(created.RoomId, updated.RoomId);
-        Assert.Contains(42, updated.PlayerIds);
+        Assert.Contains(player.PlayerId, updated.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -106,12 +110,13 @@ public sealed class InMemoryRoomStoreTests
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
         RoomStateSnapshot created = await deps.RoomStore.CreateRoomAsync(GenerateNewRoom(), CancellationToken.None);
-        await deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, 42, CancellationToken.None);
+        var player = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+        await deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, player.PlayerId, CancellationToken.None);
 
-        RoomStateSnapshot updated = await deps.RoomStore.RemovePlayerFromRoomAsync(created.RoomId, 42, CancellationToken.None);
+        RoomStateSnapshot updated = await deps.RoomStore.RemovePlayerFromRoomAsync(created.RoomId, player.PlayerId, CancellationToken.None);
 
         Assert.Equal(created.RoomId, updated.RoomId);
-        Assert.DoesNotContain(42, updated.PlayerIds);
+        Assert.DoesNotContain(player.PlayerId, updated.Players.Select(p => p.PlayerId));
     }
 
     [Fact]
@@ -137,14 +142,20 @@ public sealed class InMemoryRoomStoreTests
 
         const int playerCount = 200;
 
-        Task[] tasks = Enumerable.Range(0, playerCount)
-            .Select(i => deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, i, CancellationToken.None))
+        var players = new List<PlayerSnapshot>();
+        for (int i = 0; i < playerCount; i++)
+        {
+            players.Add(await deps.PlayerStore.CreatePlayerAsync(new Location(i, 0), CancellationToken.None));
+        }
+
+        Task[] tasks = players
+            .Select(p => deps.RoomStore.AddPlayerToRoomAsync(created.RoomId, p.PlayerId, CancellationToken.None))
             .ToArray();
 
         await Task.WhenAll(tasks);
 
         RoomStateSnapshot? snapshot = await deps.RoomStore.GetRoomAsync(created.RoomId, CancellationToken.None);
         Assert.NotNull(snapshot);
-        Assert.Equal(playerCount, snapshot!.PlayerIds.Count);
+        Assert.Equal(playerCount, snapshot!.Players.Count);
     }
 }

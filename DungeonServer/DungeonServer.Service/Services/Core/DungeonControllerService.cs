@@ -4,6 +4,7 @@ using DungeonServer.Service.Mappings.Shared;
 using DungeonServer.Application.Core.Movement.Models;
 using DungeonServer.Application.Core.Movement.Contracts;
 using DungeonServer.Application.Core.Player.Contracts;
+using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.External;
 using Grpc.Core;
@@ -46,11 +47,13 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
             {
                 var grpcResponse = new RoomSnapshot { RoomId = roomUpdate.RoomId };
 
-                foreach (int playerId in roomUpdate.PlayerIds)
+                foreach (PlayerSnapshot player in roomUpdate.Players)
                 {
                     try
                     {
-                        var result = await _dungeonController.GetPlayerInfoAsync(playerId, context.CancellationToken);
+                        var result = await _dungeonController.GetPlayerInfoAsync(
+                            player.PlayerId,
+                            context.CancellationToken);
                         grpcResponse.Players.Add(result.ToProto());
                     }
                     catch (KeyNotFoundException)
