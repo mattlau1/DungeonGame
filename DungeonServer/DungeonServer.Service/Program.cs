@@ -14,15 +14,20 @@ using DungeonServer.Infrastructure.EntityFramework.Stores.Rooms;
 using DungeonServer.Infrastructure.Messaging.Rooms;
 using DungeonServer.Service.Services.Core;
 using Microsoft.EntityFrameworkCore;
+using StackExchange.Redis;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// TODO: Don't hard code configuration & add fallback options
+string? redisConfiguration = builder.Configuration.GetSection("Redis:Configuration").Value;
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConfiguration));
 
 string? connectionString = builder.Configuration.GetConnectionString("DbConnection");
 builder.Services.AddDbContext<DungeonDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddGrpc();
 
-builder.Services.AddSingleton<IRoomSubscriptionRegistry, RoomSubscriptionRegistry>();
+builder.Services.AddSingleton<IRoomSubscriptionRegistry, RedisRoomSubscriptionRegistry>();
 builder.Services.AddScoped<IPlayerStore, EfPlayerStore>();
 builder.Services.AddScoped<IRoomStore, EfRoomStore>();
 
