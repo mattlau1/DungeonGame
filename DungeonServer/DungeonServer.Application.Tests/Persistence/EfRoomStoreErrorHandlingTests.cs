@@ -18,7 +18,7 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
     private readonly DungeonDbContext _dbContext;
     private readonly EfRoomStore _roomStore;
     private readonly EfPlayerStore _playerStore;
-    private readonly RoomSubscriptionRegistry _registry;
+    private readonly InMemoryRoomSubscriptionRegistry _registry;
 
     public EfRoomStoreErrorHandlingTests()
     {
@@ -30,7 +30,7 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
         _dbContext = new DungeonDbContext(_options);
         _playerStore = new EfPlayerStore(_dbContext);
         
-        _registry = new RoomSubscriptionRegistry(_playerStore);
+        _registry = new InMemoryRoomSubscriptionRegistry(_playerStore);
         _roomStore = new EfRoomStore(_dbContext, _registry);
     }
 

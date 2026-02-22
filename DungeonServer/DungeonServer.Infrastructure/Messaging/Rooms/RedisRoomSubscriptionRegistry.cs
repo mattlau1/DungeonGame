@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using DungeonGame.Core;
 using DungeonServer.Application.Core.Player.Models;
+using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using Google.Protobuf;
@@ -28,10 +29,12 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
     private readonly ConcurrentDictionary<int, RoomChannel> _rooms = new();
     private readonly IConnectionMultiplexer _redis;
+    private readonly IPlayerStore _playerStore;
 
-    public RedisRoomSubscriptionRegistry(IConnectionMultiplexer redis)
+    public RedisRoomSubscriptionRegistry(IConnectionMultiplexer redis, IPlayerStore playerStore)
     {
         _redis = redis;
+        _playerStore = playerStore;
     }
 
     public async IAsyncEnumerable<RoomPlayerUpdate> SubscribeAsync(
@@ -39,6 +42,12 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         int roomId,
         [EnumeratorCancellation] CancellationToken ct)
     {
+        var player = await _playerStore.GetPlayerAsync(subscriberPlayerId, ct);
+        if (player == null)
+        {
+            yield break;
+        }
+
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
 
         Guid connectionId = Guid.NewGuid();
@@ -121,11 +130,8 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
     public Task PublishUpdateAsync(int roomId, RoomPlayerUpdate update, RoomUpdateContext context, CancellationToken ct)
     {
-        // Update local state if the room is actively being tracked on this server node.
-        if (_rooms.TryGetValue(roomId, out RoomChannel? room))
-        {
-            room.CurrentState = update;
-        }
+        RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
+        room.CurrentState = update;
 
         var protoSnapshot = new RoomSnapshot { RoomId = roomId, ExcludePlayerId = context.ExcludePlayerId ?? 0 };
 
