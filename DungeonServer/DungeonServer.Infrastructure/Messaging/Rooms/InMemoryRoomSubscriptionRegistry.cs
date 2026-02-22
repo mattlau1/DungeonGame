@@ -58,8 +58,7 @@ public sealed class InMemoryRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         {
             await foreach (RoomUpdate update in subscriberChannel.Reader.ReadAllAsync(ct))
             {
-                if (room.SubscriberChannels.TryGetValue(connectionId, out var subscriber) &&
-                    update.Context.ExcludePlayerId != subscriber.PlayerId)
+                if (update.Context.ExcludePlayerId != subscriberPlayerId)
                 {
                     yield return update.Update;
                 }
