@@ -8,15 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Protobuf Include="../../contracts/**/*.proto" GrpcServices="Client" ProtoRoot="../../contracts">
-      <Link>Protos/%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </Protobuf>
+    <ProjectReference Include="..\DungeonServer.Contracts\DungeonServer.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.24.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.57.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.57.0" PrivateAssets="All" />
     <PackageReference Include="EmbedIO" Version="3.5.2" />
   </ItemGroup>
 

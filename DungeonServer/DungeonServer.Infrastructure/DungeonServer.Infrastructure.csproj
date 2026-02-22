@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\DungeonServer.Application\DungeonServer.Application.csproj" />
+      <ProjectReference Include="..\DungeonServer.Contracts\DungeonServer.Contracts.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -8,6 +8,7 @@ using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.External;
 using Grpc.Core;
+using PlayerInfo = DungeonGame.Core.PlayerInfo;
 
 namespace DungeonServer.Service.Services.Core;
 

@@ -23,3 +23,6 @@ DungeonServer/DungeonServer.Benchmark/obj/
 
 DungeonServer/DungeonServer.Infrastructure/bin/
 DungeonServer/DungeonServer.Infrastructure/obj/
+
+DungeonServer/DungeonServer.Contracts/bin/
+DungeonServer/DungeonServer.Contracts/obj/

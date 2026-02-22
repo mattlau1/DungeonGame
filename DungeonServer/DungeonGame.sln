@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DungeonServer.Benchmark", "DungeonServer.Benchmark\DungeonServer.Benchmark.csproj", "{B3E4F5A6-C7D8-4901-A2B3-C4D5E6F7A8B9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DungeonServer.Infrastructure", "DungeonServer.Infrastructure\DungeonServer.Infrastructure.csproj", "{65652DDE-4159-44D5-8590-DFF4C8669F55}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DungeonServer.Contracts", "DungeonServer.Contracts\DungeonServer.Contracts.csproj", "{B590D4F6-E4E6-4B63-9440-35692A6D6333}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,5 +44,9 @@ Global
 		{65652DDE-4159-44D5-8590-DFF4C8669F55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{65652DDE-4159-44D5-8590-DFF4C8669F55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{65652DDE-4159-44D5-8590-DFF4C8669F55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B590D4F6-E4E6-4B63-9440-35692A6D6333}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B590D4F6-E4E6-4B63-9440-35692A6D6333}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B590D4F6-E4E6-4B63-9440-35692A6D6333}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B590D4F6-E4E6-4B63-9440-35692A6D6333}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
