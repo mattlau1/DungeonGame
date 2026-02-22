@@ -50,17 +50,7 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
 
                 foreach (PlayerSnapshot player in roomUpdate.Players)
                 {
-                    try
-                    {
-                        var result = await _dungeonController.GetPlayerInfoAsync(
-                            player.PlayerId,
-                            context.CancellationToken);
-                        grpcResponse.Players.Add(result.ToProto());
-                    }
-                    catch (KeyNotFoundException)
-                    {
-                        // Player disconnected since the update was queued; skip them.
-                    }
+                    grpcResponse.Players.Add(player.ToProto());
                 }
 
                 await responseStream.WriteAsync(grpcResponse);
