@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using System.Net;
 using DungeonServer.Application.Core.Player.Models;
+using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
+using DungeonServer.Infrastructure.InMemory.Player;
 using DungeonServer.Infrastructure.Messaging.Rooms;
 using Moq;
 using StackExchange.Redis;
@@ -14,15 +16,17 @@ namespace DungeonServer.Application.Tests.Rooms;
 public class RedisRoomSubscriptionRegistryTests
 {
     private readonly InMemoryRedisConnection _redisConnection;
+    private readonly InMemoryPlayerStore _playerStore;
 
     public RedisRoomSubscriptionRegistryTests()
     {
         _redisConnection = new InMemoryRedisConnection();
+        _playerStore = new InMemoryPlayerStore();
     }
 
     private RedisRoomSubscriptionRegistry CreateRegistry()
     {
-        return new RedisRoomSubscriptionRegistry(_redisConnection.MockConnection.Object);
+        return new RedisRoomSubscriptionRegistry(_redisConnection.MockConnection.Object, _playerStore);
     }
 
     [Fact]
@@ -30,13 +34,15 @@ public class RedisRoomSubscriptionRegistryTests
     {
         var registry = CreateRegistry();
 
+        var player = await _playerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+
         using var cts = new CancellationTokenSource();
 
         Task subscribeTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate _ in registry.SubscribeAsync(1, 1, cts.Token))
+                await foreach (RoomPlayerUpdate _ in registry.SubscribeAsync(player.PlayerId, 1, cts.Token))
                 {
                     break;
                 }
@@ -59,6 +65,8 @@ public class RedisRoomSubscriptionRegistryTests
         var registry = CreateRegistry();
         int roomId = 1;
 
+        var player = await _playerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+
         // Start subscription first so room is tracked in _rooms
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         
@@ -68,7 +76,7 @@ public class RedisRoomSubscriptionRegistryTests
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(1, roomId, cts.Token))
+                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(player.PlayerId, roomId, cts.Token))
                 {
                     snapshots.Add(snap);
                     if (snapshots.Count >= 1) break;
@@ -117,6 +125,9 @@ public class RedisRoomSubscriptionRegistryTests
         var registry = CreateRegistry();
         int roomId = 1;
 
+        var player1 = await _playerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+        var player2 = await _playerStore.CreatePlayerAsync(new Location(1, 0), CancellationToken.None);
+
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
         var snapshots1 = new List<RoomPlayerUpdate>();
@@ -124,7 +135,7 @@ public class RedisRoomSubscriptionRegistryTests
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(1, roomId, cts.Token))
+                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(player1.PlayerId, roomId, cts.Token))
                 {
                     snapshots1.Add(snap);
                     if (snapshots1.Count >= 1) break;
@@ -140,7 +151,7 @@ public class RedisRoomSubscriptionRegistryTests
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(2, roomId, cts.Token))
+                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(player2.PlayerId, roomId, cts.Token))
                 {
                     snapshots2.Add(snap);
                     if (snapshots2.Count >= 1) break;
@@ -176,6 +187,8 @@ public class RedisRoomSubscriptionRegistryTests
         var registry = CreateRegistry();
         int roomId = 1;
 
+        var player = await _playerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+
         await Task.Delay(100);
 
         var initialUpdate = new RoomPlayerUpdate
@@ -195,7 +208,7 @@ public class RedisRoomSubscriptionRegistryTests
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(1, roomId, cts.Token))
+                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(player.PlayerId, roomId, cts.Token))
                 {
                     snapshots.Add(snap);
                 }
@@ -239,7 +252,9 @@ public class RedisRoomSubscriptionRegistryTests
     {
         var registry = CreateRegistry();
         int roomId = 1;
-        int playerId = 1;
+
+        var player = await _playerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
+        int playerId = player.PlayerId;
 
         // Start subscription first so room is tracked
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
