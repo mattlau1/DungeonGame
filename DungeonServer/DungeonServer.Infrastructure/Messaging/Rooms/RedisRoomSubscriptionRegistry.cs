@@ -41,7 +41,7 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
     {
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
 
-        Guid connectionId = Guid.NewGuid();
+        var connectionId = Guid.NewGuid();
 
         var subscriberChannel = Channel.CreateBounded<RoomUpdate>(
             new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
@@ -113,7 +113,7 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
         room.CurrentState = update;
 
-        foreach (var subscriber in room.SubscriberChannels.Values)
+        foreach ((Channel<RoomUpdate> Channel, int PlayerId) subscriber in room.SubscriberChannels.Values)
         {
             subscriber.Channel.Writer.TryWrite(roomUpdate);
         }
