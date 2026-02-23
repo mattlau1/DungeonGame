@@ -35,7 +35,8 @@ public class EfPlayerStore : IPlayerStore
         {
             Id = playerEntity.Id,
             RoomId = playerEntity.RoomId,
-            Location = new LocationProto { X = playerEntity.X, Y = playerEntity.Y }
+            Location = new LocationProto { X = playerEntity.X, Y = playerEntity.Y },
+            IsOnline = true
         };
         
         await _playerCache.SetAsync(playerEntity.Id, playerInfo, TimeSpan.FromSeconds(30), ct);
@@ -66,7 +67,8 @@ public class EfPlayerStore : IPlayerStore
         {
             Id = player.Id,
             RoomId = player.RoomId,
-            Location = new LocationProto { X = player.X, Y = player.Y }
+            Location = new LocationProto { X = player.X, Y = player.Y },
+            IsOnline = player.IsOnline
         };
         
         await _playerCache.SetAsync(playerId, playerInfo, TimeSpan.FromSeconds(30), ct);
@@ -96,7 +98,7 @@ public class EfPlayerStore : IPlayerStore
             TimeSpan.FromSeconds(30),
             ct);
 
-        return new PlayerSnapshot(playerInfo.Id, playerInfo.RoomId, new Location(playerInfo.Location.X, playerInfo.Location.Y), true);
+        return new PlayerSnapshot(playerInfo.Id, playerInfo.RoomId, new Location(playerInfo.Location.X, playerInfo.Location.Y), playerInfo.IsOnline);
     }
 
     public async Task<int> GetActivePlayerCountAsync(CancellationToken ct)
