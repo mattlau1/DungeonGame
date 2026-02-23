@@ -148,6 +148,7 @@ public class EfRoomStore : IRoomStore
             RoomId = roomId,
             Players = room.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
         };
+
         await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, context, ct);
     }
 
