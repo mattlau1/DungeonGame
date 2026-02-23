@@ -8,6 +8,9 @@ using DungeonServer.Application.Core.Rooms.Contracts;
 using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.External;
+using DungeonServer.Infrastructure.Caching;
+using DungeonServer.Infrastructure.Caching.Generic;
+using DungeonServer.Infrastructure.Caching.Player;
 using DungeonServer.Infrastructure.EntityFramework;
 using DungeonServer.Infrastructure.EntityFramework.Stores.Player;
 using DungeonServer.Infrastructure.EntityFramework.Stores.Rooms;
@@ -28,6 +31,10 @@ builder.Services.AddDbContext<DungeonDbContext>(options => options.UseNpgsql(con
 builder.Services.AddGrpc();
 
 builder.Services.AddSingleton<IRoomSubscriptionRegistry, RedisRoomSubscriptionRegistry>();
+
+builder.Services.AddSingleton<IProtoCacheService, RedisProtoCacheService>();
+builder.Services.AddSingleton<IPlayerCache, RedisPlayerCache>();
+
 builder.Services.AddScoped<IPlayerStore, EfPlayerStore>();
 builder.Services.AddScoped<IRoomStore, EfRoomStore>();
 

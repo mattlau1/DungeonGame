@@ -2,18 +2,23 @@ using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Shared;
+using DungeonServer.Infrastructure.Caching.Player;
 using DungeonServer.Infrastructure.EntityFramework.Entities;
 using Microsoft.EntityFrameworkCore;
+using PlayerInfoProto = DungeonGame.Core.PlayerInfo;
+using LocationProto = DungeonGame.Shared.Location;
 
 namespace DungeonServer.Infrastructure.EntityFramework.Stores.Player;
 
 public class EfPlayerStore : IPlayerStore
 {
     private readonly DungeonDbContext _dbContext;
+    private readonly IPlayerCache _playerCache;
 
-    public EfPlayerStore(DungeonDbContext dbContext)
+    public EfPlayerStore(DungeonDbContext dbContext, IPlayerCache playerCache)
     {
         _dbContext = dbContext;
+        _playerCache = playerCache;
     }
 
     public async Task<PlayerSnapshot> CreatePlayerAsync(Location initialLocation, CancellationToken ct)
@@ -25,6 +30,16 @@ public class EfPlayerStore : IPlayerStore
 
         _dbContext.Players.Add(playerEntity);
         await _dbContext.SaveChangesAsync(ct);
+
+        var playerInfo = new PlayerInfoProto
+        {
+            Id = playerEntity.Id,
+            RoomId = playerEntity.RoomId,
+            Location = new LocationProto { X = playerEntity.X, Y = playerEntity.Y }
+        };
+        
+        await _playerCache.SetAsync(playerEntity.Id, playerInfo, TimeSpan.FromSeconds(30), ct);
+        await _playerCache.InvalidateCountAsync(ct);
 
         return ToSnapshot(playerEntity);
     }
@@ -47,18 +62,41 @@ public class EfPlayerStore : IPlayerStore
 
         await _dbContext.SaveChangesAsync(ct);
 
+        var playerInfo = new PlayerInfoProto
+        {
+            Id = player.Id,
+            RoomId = player.RoomId,
+            Location = new LocationProto { X = player.X, Y = player.Y }
+        };
+        
+        await _playerCache.SetAsync(playerId, playerInfo, TimeSpan.FromSeconds(30), ct);
+
         return ToSnapshot(player);
     }
 
     public async Task<PlayerSnapshot?> GetPlayerAsync(int playerId, CancellationToken ct)
     {
-        PlayerEntity? player = await _dbContext.Players.FindAsync([playerId], ct);
-        if (player == null)
-        {
-            throw new KeyNotFoundException($"Player Id {playerId} does not exist.");
-        }
+        PlayerInfoProto playerInfo = await _playerCache.GetOrSetAsync(
+            playerId,
+            async () =>
+            {
+                PlayerEntity? player = await _dbContext.Players.FindAsync([playerId], ct);
+                if (player == null)
+                {
+                    throw new KeyNotFoundException($"Player Id {playerId} does not exist.");
+                }
 
-        return ToSnapshot(player);
+                return new PlayerInfoProto
+                {
+                    Id = player.Id,
+                    RoomId = player.RoomId,
+                    Location = new LocationProto { X = player.X, Y = player.Y }
+                };
+            },
+            TimeSpan.FromSeconds(30),
+            ct);
+
+        return new PlayerSnapshot(playerInfo.Id, playerInfo.RoomId, new Location(playerInfo.Location.X, playerInfo.Location.Y), true);
     }
 
     public async Task<int> GetActivePlayerCountAsync(CancellationToken ct)
@@ -91,6 +129,9 @@ public class EfPlayerStore : IPlayerStore
         player.IsOnline = false;
         
         await _dbContext.SaveChangesAsync(ct);
+        
+        await _playerCache.InvalidateAsync(playerId, ct);
+        await _playerCache.InvalidateCountAsync(ct);
     }
 
     private static PlayerSnapshot ToSnapshot(PlayerEntity entity)

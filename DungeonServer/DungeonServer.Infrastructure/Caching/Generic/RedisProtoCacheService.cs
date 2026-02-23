@@ -1,7 +1,7 @@
 using Google.Protobuf;
 using StackExchange.Redis;
 
-namespace DungeonServer.Infrastructure.Caching;
+namespace DungeonServer.Infrastructure.Caching.Generic;
 
 public class RedisProtoCacheService : IProtoCacheService
 {

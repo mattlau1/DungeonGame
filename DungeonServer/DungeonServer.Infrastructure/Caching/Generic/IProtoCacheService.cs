@@ -1,6 +1,6 @@
 using Google.Protobuf;
 
-namespace DungeonServer.Infrastructure.Caching;
+namespace DungeonServer.Infrastructure.Caching.Generic;
 
 public interface IProtoCacheService
 {
