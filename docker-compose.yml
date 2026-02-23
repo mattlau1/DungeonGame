@@ -54,5 +54,14 @@ services:
       postgres:
         condition: service_healthy
 
+  redis-insight:
+    image: redis/redisinsight:latest
+    restart: always
+    ports:
+      - "9091:5540"
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:
