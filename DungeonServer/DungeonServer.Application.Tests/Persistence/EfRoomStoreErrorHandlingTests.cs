@@ -31,7 +31,7 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
         _dbContext = new DungeonDbContext(_options);
         _playerStore = new EfPlayerStore(_dbContext);
 
-        _registry = new InMemoryRoomSubscriptionRegistry(_playerStore);
+        _registry = new InMemoryRoomSubscriptionRegistry();
         _roomStore = new EfRoomStore(_dbContext, _registry);
     }
 

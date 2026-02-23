@@ -3,11 +3,9 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using DungeonGame.Core;
 using DungeonServer.Application.Core.Player.Models;
-using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using Google.Protobuf;
-using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using PlayerInfo = DungeonGame.Core.PlayerInfo;
 using Location = DungeonServer.Application.Core.Shared.Location;
@@ -20,8 +18,7 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
     private sealed class RoomChannel
     {
-        public ConcurrentDictionary<Guid, (Channel<RoomUpdate> Channel, int PlayerId)> SubscriberChannels { get; } =
-            new();
+        public ConcurrentDictionary<Guid, (Channel<RoomUpdate> Channel, int PlayerId)> SubscriberChannels { get; } = new();
 
         public RoomPlayerUpdate? CurrentState { get; set; }
 
@@ -30,14 +27,11 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
     }
 
     private readonly ConcurrentDictionary<int, RoomChannel> _rooms = new();
-
     private readonly IConnectionMultiplexer _redis;
-    private readonly IServiceProvider _serviceProvider;
 
-    public RedisRoomSubscriptionRegistry(IConnectionMultiplexer redis, IServiceProvider serviceProvider)
+    public RedisRoomSubscriptionRegistry(IConnectionMultiplexer redis)
     {
         _redis = redis;
-        _serviceProvider = serviceProvider;
     }
 
     public async IAsyncEnumerable<RoomPlayerUpdate> SubscribeAsync(
@@ -45,14 +39,6 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         int roomId,
         [EnumeratorCancellation] CancellationToken ct)
     {
-        using IServiceScope scope = _serviceProvider.CreateScope();
-        var playerStore = scope.ServiceProvider.GetRequiredService<IPlayerStore>();
-        PlayerSnapshot? player = await playerStore.GetPlayerAsync(subscriberPlayerId, ct);
-        if (player == null)
-        {
-            yield break;
-        }
-
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
 
         Guid connectionId = Guid.NewGuid();

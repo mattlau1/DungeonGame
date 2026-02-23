@@ -56,7 +56,7 @@ public static class TestHelpers
         var playerStore = new InMemoryPlayerStore();
         var serviceProvider = new ServiceCollection().AddSingleton<IPlayerStore>(playerStore).BuildServiceProvider();
         var scopeFactory = new FakeScopeFactory(serviceProvider);
-        var registry = new InMemoryRoomSubscriptionRegistry(playerStore);
+        var registry = new InMemoryRoomSubscriptionRegistry();
         var roomStore = new InMemoryRoomStore(registry, playerStore);
         var movementManager = new MovementManager(playerStore, roomStore);
         var architect = new DungeonArchitect(roomStore);

@@ -1,13 +1,11 @@
 using System.Collections.Concurrent;
 using System.Net;
 using DungeonServer.Application.Core.Player.Models;
-using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
 using DungeonServer.Infrastructure.InMemory.Player;
 using DungeonServer.Infrastructure.Messaging.Rooms;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using StackExchange.Redis;
 using Xunit;
@@ -18,21 +16,16 @@ public class RedisRoomSubscriptionRegistryTests
 {
     private readonly InMemoryRedisConnection _redisConnection;
     private readonly InMemoryPlayerStore _playerStore;
-    private readonly IServiceProvider _serviceProvider;
 
     public RedisRoomSubscriptionRegistryTests()
     {
         _redisConnection = new InMemoryRedisConnection();
         _playerStore = new InMemoryPlayerStore();
-
-        var services = new ServiceCollection();
-        services.AddSingleton<IPlayerStore>(_playerStore);
-        _serviceProvider = services.BuildServiceProvider();
     }
 
     private RedisRoomSubscriptionRegistry CreateRegistry()
     {
-        return new RedisRoomSubscriptionRegistry(_redisConnection.MockConnection.Object, _serviceProvider);
+        return new RedisRoomSubscriptionRegistry(_redisConnection.MockConnection.Object);
     }
 
     [Fact]

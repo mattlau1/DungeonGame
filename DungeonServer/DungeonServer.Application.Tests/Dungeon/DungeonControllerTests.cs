@@ -540,35 +540,6 @@ public static class DungeonControllerTests
         }
 
         [Fact]
-        public async Task InvalidPlayerId_NoEmissions()
-        {
-            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
-            PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-            int roomId = player.RoomId;
-
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-            var snapshots = new List<RoomPlayerUpdate>();
-
-            Task subscriptionTask = Task.Run(async () =>
-            {
-                try
-                {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(999, roomId, cts.Token))
-                    {
-                        snapshots.Add(snap);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                }
-            });
-
-            await subscriptionTask;
-
-            Assert.Empty(snapshots);
-        }
-
-        [Fact]
         public async Task ReceivesInitialSnapshotEvenIfLastUpdateExcludedThem()
         {
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
