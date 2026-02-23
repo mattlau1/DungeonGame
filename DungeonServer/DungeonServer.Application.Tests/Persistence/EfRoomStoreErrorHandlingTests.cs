@@ -3,18 +3,22 @@ using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
+using DungeonServer.Infrastructure.Caching.Player;
 using DungeonServer.Infrastructure.EntityFramework;
 using DungeonServer.Infrastructure.EntityFramework.Stores.Player;
 using DungeonServer.Infrastructure.EntityFramework.Stores.Rooms;
 using DungeonServer.Infrastructure.Messaging.Rooms;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Xunit;
+using PlayerInfo = DungeonGame.Core.PlayerInfo;
 
 namespace DungeonServer.Application.Tests.Persistence;
 
 public sealed class EfRoomStoreErrorHandlingTests : IDisposable
 {
     private readonly DbContextOptions<DungeonDbContext> _options;
+    private readonly Mock<IPlayerCache> _mockPlayerCache;
     private readonly DungeonDbContext _dbContext;
     private readonly EfRoomStore _roomStore;
     private readonly EfPlayerStore _playerStore;
@@ -28,8 +32,13 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
                 w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
+        _mockPlayerCache = new Mock<IPlayerCache>();
+        _mockPlayerCache
+            .Setup(x => x.GetOrSetAsync(It.IsAny<int>(), It.IsAny<Func<Task<PlayerInfo>>>(), It.IsAny<TimeSpan?>(), It.IsAny<CancellationToken>()))
+            .Returns(async (int id, Func<Task<PlayerInfo>> factory, TimeSpan? expiry, CancellationToken ct) => await factory());
+        
         _dbContext = new DungeonDbContext(_options);
-        _playerStore = new EfPlayerStore(_dbContext);
+        _playerStore = new EfPlayerStore(_dbContext, _mockPlayerCache.Object);
 
         _registry = new InMemoryRoomSubscriptionRegistry();
         _roomStore = new EfRoomStore(_dbContext, _registry);
