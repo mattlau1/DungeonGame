@@ -34,7 +34,7 @@ public class MovementManagerTests
         var requested = new Location(1f, 0f);
 
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(snapshot.PlayerId, requested),
+            snapshot.PlayerId, requested.X, requested.Y,
             CancellationToken.None);
 
         Assert.Equal(MovementRequestStatus.Ok, resp.Status);
@@ -63,7 +63,7 @@ public class MovementManagerTests
         var requested = new Location(100f, 0f);
 
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(snapshot.PlayerId, requested),
+            snapshot.PlayerId, requested.X, requested.Y,
             CancellationToken.None);
 
         Assert.Equal(MovementRequestStatus.TooFast, resp.Status);
@@ -79,7 +79,7 @@ public class MovementManagerTests
         var manager = new MovementManager(playerStore, deps.RoomStore);
 
         var response = await manager.SetMovementInput(
-            new MovementInputRequest(9999, new Location(1, 1)),
+            9999, 1, 1,
             CancellationToken.None);
 
         Assert.Equal(MovementRequestStatus.InvalidPlayer, response.Status);
@@ -111,9 +111,9 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(11f, 5f);
+        // Delta: from (9,5) move to exit at (11,5) needs delta of (2, 0)
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(player.PlayerId, requested),
+            player.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         Assert.Equal(MovementRequestStatus.Ok, resp.Status);
@@ -146,9 +146,9 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(-1f, 5f);
+        // Delta: from (0,5) move to exit at (-1,5) needs delta of (-1, 0)
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(player.PlayerId, requested),
+            player.PlayerId, -1f, 0f,
             CancellationToken.None);
 
         Assert.Equal(MovementRequestStatus.Ok, resp.Status);
@@ -182,9 +182,9 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(5f, 11f);
+        // Delta: from (5,9) move to exit at (5,11) needs delta of (0, 2)
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(player.PlayerId, requested),
+            player.PlayerId, 0f, 2f,
             CancellationToken.None);
 
         Assert.Equal(MovementRequestStatus.Ok, resp.Status);
@@ -218,9 +218,9 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(5f, -1f);
+        // Delta: from (5,0) move to exit at (5,-1) needs delta of (0, -1)
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(player.PlayerId, requested),
+            player.PlayerId, 0f, -1f,
             CancellationToken.None);
 
         Assert.Equal(MovementRequestStatus.Ok, resp.Status);
@@ -246,9 +246,9 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(11f, 5f);
+        // Delta: from (9,5) move 2 east to hit wall at (11,5), no exit → Blocked
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(player.PlayerId, requested),
+            player.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         Assert.Equal(MovementRequestStatus.Blocked, resp.Status);
@@ -280,9 +280,9 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(11f, 5f);
+        // Delta: from (9,5) move 2 east to exit at (11,5) → transition to room2
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(player.PlayerId, requested),
+            player.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         Assert.True(resp.Location.X >= 0);
@@ -317,9 +317,9 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(11f, 5f);
+        // Delta: from (9,5) move 2 east to exit at (11,5) → transition to room2
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(player.PlayerId, requested),
+            player.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         Assert.Equal(roomSnapshot2.RoomId, resp.RoomId);
@@ -351,8 +351,8 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(11f, 5f);
-        await manager.SetMovementInput(new MovementInputRequest(player.PlayerId, requested), CancellationToken.None);
+        // Delta: from (9,5) move 2 east to exit at (11,5) → transition to room2
+        await manager.SetMovementInput(player.PlayerId, 2f, 0f, CancellationToken.None);
 
         RoomStateSnapshot? oldRoom = await deps.RoomStore.GetRoomAsync(roomSnapshot1.RoomId, CancellationToken.None);
         Assert.DoesNotContain(player.PlayerId, oldRoom!.Players.Select(p => p.PlayerId));
@@ -384,8 +384,8 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(11f, 5f);
-        await manager.SetMovementInput(new MovementInputRequest(player.PlayerId, requested), CancellationToken.None);
+        // Delta: from (9,5) move 2 east to exit at (11,5) → transition to room2
+        await manager.SetMovementInput(player.PlayerId, 2f, 0f, CancellationToken.None);
 
         RoomStateSnapshot? newRoom = await deps.RoomStore.GetRoomAsync(roomSnapshot2.RoomId, CancellationToken.None);
         Assert.Contains(player.PlayerId, newRoom!.Players.Select(p => p.PlayerId));
@@ -418,9 +418,9 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(11f, startY);
+        // Delta: from (9,3.5) move 2 east to exit at (11,3.5)
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(player.PlayerId, requested),
+            player.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         float expectedY = (startY / roomSnapshot1.Height) * roomSnapshot2.Height;
@@ -454,9 +454,9 @@ public class MovementManagerTests
             CancellationToken.None);
         await deps.RoomStore.AddPlayerToRoomAsync(roomSnapshot1.RoomId, player.PlayerId, CancellationToken.None);
 
-        var requested = new Location(startX, 11f);
+        // Delta: from (4.5,9) move 2 north to exit at (4.5,11)
         MovementInputResponse resp = await manager.SetMovementInput(
-            new MovementInputRequest(player.PlayerId, requested),
+            player.PlayerId, 0f, 2f,
             CancellationToken.None);
 
         float expectedX = (startX / roomSnapshot1.Width) * roomSnapshot2.Width;
@@ -523,9 +523,9 @@ public class MovementManagerTests
 
         await Task.Delay(50);
 
-        var requested = new Location(11f, 5f);
+        // Delta: from (9,5) move 2 east to exit at (11,5)
         await manager.SetMovementInput(
-            new MovementInputRequest(movingPlayer.PlayerId, requested),
+            movingPlayer.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         await Task.Delay(100);
@@ -597,9 +597,9 @@ public class MovementManagerTests
 
         await Task.Delay(50);
 
-        var requested = new Location(11f, 5f);
+        // Delta: from (9,5) move 2 east to exit at (11,5)
         await manager.SetMovementInput(
-            new MovementInputRequest(movingPlayer.PlayerId, requested),
+            movingPlayer.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         await Task.Delay(100);
@@ -703,9 +703,9 @@ public class MovementManagerTests
 
         await Task.Delay(50);
 
-        var requested = new Location(11f, 5f);
+        // Delta: from (9,5) move 2 east to exit at (11,5)
         await manager.SetMovementInput(
-            new MovementInputRequest(movingPlayer.PlayerId, requested),
+            movingPlayer.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         await Task.Delay(100);
@@ -778,9 +778,9 @@ public class MovementManagerTests
 
         await Task.Delay(100);
 
-        var requested = new Location(11f, 5f);
+        // Delta: from (9,5) move 2 east to exit at (11,5)
         await manager.SetMovementInput(
-            new MovementInputRequest(movingPlayer.PlayerId, requested),
+            movingPlayer.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         await Task.Delay(100);
@@ -840,9 +840,9 @@ public class MovementManagerTests
 
         await Task.Delay(100);
 
-        var requested = new Location(11f, 5f);
+        // Delta: from (9,5) move 2 east to exit at (11,5)
         await manager.SetMovementInput(
-            new MovementInputRequest(movingPlayer.PlayerId, requested),
+            movingPlayer.PlayerId, 2f, 0f,
             CancellationToken.None);
 
         await Task.Delay(100);

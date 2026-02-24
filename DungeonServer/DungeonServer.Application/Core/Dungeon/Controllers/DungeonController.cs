@@ -1,4 +1,5 @@
 using DungeonServer.Application.Core.Movement.Contracts;
+using DungeonServer.Application.Core.Movement.Models;
 using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Player.Storage;
@@ -52,13 +53,7 @@ public sealed class DungeonController : IDungeonController
         float inputY,
         CancellationToken ct)
     {
-        PlayerInfoResult currPlayer = await GetPlayerInfoAsync(playerId, ct);
-        Location currLocation = currPlayer.PlayerInfo.Location;
-
-        var destination = new Location(currLocation.X + inputX, currLocation.Y + inputY);
-        var moveRequest = new MovementInputRequest(playerId, destination);
-
-        return await _movementManager.SetMovementInput(moveRequest, ct);
+        return await _movementManager.SetMovementInput(playerId, inputX, inputY, ct);
     }
 
     public IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct)

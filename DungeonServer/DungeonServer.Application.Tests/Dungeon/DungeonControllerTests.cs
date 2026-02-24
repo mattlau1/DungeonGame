@@ -262,8 +262,8 @@ public static class DungeonControllerTests
         {
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-                deps.Controller.SetMovementInputAsync(999, 1f, 0f, CancellationToken.None));
+            MovementInputResponse response = await deps.Controller.SetMovementInputAsync(999, 1f, 0f, CancellationToken.None);
+            Assert.Equal(MovementRequestStatus.InvalidPlayer, response.Status);
         }
 
         [Fact]

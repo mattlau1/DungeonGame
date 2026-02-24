@@ -21,14 +21,21 @@ public class MovementManager : IMovementManager
         _roomStore = roomStore;
     }
 
-    public async Task<MovementInputResponse> SetMovementInput(MovementInputRequest moveRequest, CancellationToken ct)
+    public async Task<MovementInputResponse> SetMovementInput(
+        int playerId,
+        float inputX,
+        float inputY,
+        CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
-        PlayerSnapshot? player = await _playerStore.GetPlayerAsync(moveRequest.PlayerId, ct);
+        PlayerSnapshot? player = await _playerStore.GetPlayerAsync(playerId, ct);
         if (player == null)
         {
-            return new MovementInputResponse(MovementRequestStatus.InvalidPlayer, Location.Origin, RoomConstants.InvalidRoomId);
+            return new MovementInputResponse(
+                MovementRequestStatus.InvalidPlayer,
+                Location.Origin,
+                RoomConstants.InvalidRoomId);
         }
 
         RoomStateSnapshot? room = await _roomStore.GetRoomAsync(player.RoomId, ct);
@@ -37,14 +44,16 @@ public class MovementManager : IMovementManager
             return new MovementInputResponse(MovementRequestStatus.Blocked, player.Location, player.RoomId);
         }
 
-        MovementRequestStatus status = GetMoveRequestStatus(player.Location, moveRequest.RequestedLocation);
+        Location currLocation = player.Location;
+        Location requestedLocation = new(currLocation.X + inputX, currLocation.Y + inputY);
+
+        MovementRequestStatus status = GetMoveRequestStatus(currLocation, requestedLocation);
         if (status != MovementRequestStatus.Ok)
         {
             return new MovementInputResponse(status, player.Location, player.RoomId);
         }
 
-        (Location destinationLocation, int destinationRoomId) =
-            await ResolveDestination(room, moveRequest.RequestedLocation, ct);
+        (Location destinationLocation, int destinationRoomId) = await ResolveDestination(room, requestedLocation, ct);
 
         if (destinationRoomId == RoomConstants.InvalidRoomId)
         {
@@ -53,21 +62,14 @@ public class MovementManager : IMovementManager
 
         if (destinationRoomId != player.RoomId)
         {
-            await _roomStore.SwapRoomsAsync(moveRequest.PlayerId, player.RoomId, destinationRoomId, ct);
+            await _roomStore.SwapRoomsAsync(playerId, player.RoomId, destinationRoomId, ct);
         }
 
-        await _playerStore.UpdateLocationAsync(
-            moveRequest.PlayerId,
-            destinationLocation,
-            destinationRoomId,
-            ct);
+        await _playerStore.UpdateLocationAsync(playerId, destinationLocation, destinationRoomId, ct);
 
         if (destinationRoomId == player.RoomId)
         {
-            await _roomStore.PublishRoomUpdateAsync(
-                destinationRoomId,
-                RoomUpdateContext.ExcludePlayer(moveRequest.PlayerId),
-                ct);
+            await _roomStore.PublishRoomUpdateAsync(destinationRoomId, RoomUpdateContext.ExcludePlayer(playerId), ct);
         }
 
         return new MovementInputResponse(MovementRequestStatus.Ok, destinationLocation, destinationRoomId);
