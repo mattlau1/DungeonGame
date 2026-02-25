@@ -31,4 +31,10 @@ public class TestScenario
     // Common settings
     public int MovementHz { get; set; } = 60;
     public bool EnableRoomTransitions { get; set; } = false;
+
+    // For churn tests
+    public bool EnableChurn { get; set; } = false;
+    public int MinLifetimeMs { get; set; } = 1000;
+    public int MaxLifetimeMs { get; set; } = 5000;
+    public int SpawnDelaySpreadMs { get; set; } = 2000;
 }

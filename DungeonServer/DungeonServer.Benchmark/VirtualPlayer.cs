@@ -12,6 +12,8 @@ public class VirtualPlayer
     private readonly MetricsCollector _metrics;
     private readonly bool _enableRoomTransitions;
     private readonly int _movementIntervalMs;
+    private readonly int? _maxLifetimeMs;
+    private readonly int? _spawnDelayMs;
 
     private GrpcChannel? _channel;
     private DungeonController.DungeonControllerClient? _client;
@@ -25,25 +27,38 @@ public class VirtualPlayer
     private float _y;
     private readonly Random _random = new();
     private bool _isRunning;
+    private DateTime _createdAt;
 
     public bool IsConnected { get; private set; }
+    public DateTime CreatedAt => _createdAt;
+    public int? MaxLifetimeMs => _maxLifetimeMs;
 
     public VirtualPlayer(
         int playerId,
         string serverUrl,
         MetricsCollector metrics,
         bool enableRoomTransitions,
-        int movementHz)
+        int movementHz,
+        int? maxLifetimeMs = null,
+        int? spawnDelayMs = null)
     {
         _playerId = playerId;
         _serverUrl = serverUrl;
         _metrics = metrics;
         _enableRoomTransitions = enableRoomTransitions;
-        _movementIntervalMs = 1000 / movementHz;
+        _movementIntervalMs = movementHz > 0 ? 1000 / movementHz : 0;
+        _maxLifetimeMs = maxLifetimeMs;
+        _spawnDelayMs = spawnDelayMs;
+        _random = new Random(playerId + Environment.TickCount);
     }
 
     public async Task ConnectAndSpawnAsync()
     {
+        if (_spawnDelayMs.HasValue && _spawnDelayMs.Value > 0)
+        {
+            await Task.Delay(_random.Next(_spawnDelayMs.Value));
+        }
+
         try
         {
             _channel = GrpcChannel.ForAddress(_serverUrl);
@@ -71,6 +86,8 @@ public class VirtualPlayer
             Console.WriteLine($"Player {_playerId} spawned in room {_roomId} with size {_roomWidth}x{_roomHeight} at ({_x:F2},{_y:F2})");
 
             _metrics.RegisterPlayer(_playerId);
+
+            _createdAt = DateTime.UtcNow;
 
             _cts = new CancellationTokenSource();
             var subscribeStopwatch = Stopwatch.StartNew();
@@ -148,7 +165,8 @@ public class VirtualPlayer
 
     public async Task StartMovementLoopAsync()
     {
-        if (!IsConnected || _client == null) return;
+        if (!IsConnected || _client == null || _movementIntervalMs <= 0) 
+            return;
 
         _isRunning = true;
 
@@ -161,6 +179,11 @@ public class VirtualPlayer
 
             while (_isRunning && !_cts?.IsCancellationRequested == true)
             {
+                if (_maxLifetimeMs.HasValue && (DateTime.UtcNow - _createdAt).TotalMilliseconds > _maxLifetimeMs.Value)
+                {
+                    break;
+                }
+
                 var stopwatch = Stopwatch.StartNew();
 
                 var (inputX, inputY) = CalculateMovementInput(localX, localY);

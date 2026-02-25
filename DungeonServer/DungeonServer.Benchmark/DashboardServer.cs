@@ -126,10 +126,12 @@ public class DashboardServer : IDisposable
                     {
                         _results.Clear();
                     }
+
                     lock (_historyLock)
                     {
                         _history.Clear();
                     }
+
                     _benchmarkComplete = false;
 
                     var benchmarkConfig = CreateBenchmarkConfig(request.Type);
@@ -251,6 +253,39 @@ public class DashboardServer : IDisposable
                     PlayerCount = 20,
                     MovementRates = [10, 30, 60, 120],
                     EnableRoomTransitions = false
+                },
+
+                new TestScenario
+                {
+                    Name = "EfPlayerStore_GetPlayerAsync_CacheStress",
+                    Description =
+                        "High player count with room subscriptions - tests GetPlayerAsync cache performance",
+                    PlayerCounts = [50, 200],
+                    MovementHz = 10,
+                    EnableRoomTransitions = false
+                },
+
+                new TestScenario
+                {
+                    Name = "EfPlayerStore_UpdateLocation_CacheStress",
+                    Description =
+                        "Moderate players with high movement rate - tests UpdateLocationAsync cache performance",
+                    PlayerCounts = [50, 150],
+                    MovementHz = 60,
+                    EnableRoomTransitions = false
+                },
+                new TestScenario
+                {
+                    Name = "EfPlayerStore_RandomChurn",
+                    Description =
+                        "Random player connect/disconnect churn with movement - tests GetPlayerAsync and GetActivePlayerCount caching",
+                    PlayerCounts = [50, 100],
+                    MovementHz = 10,
+                    EnableRoomTransitions = false,
+                    EnableChurn = true,
+                    MinLifetimeMs = 1000,
+                    MaxLifetimeMs = 5000,
+                    SpawnDelaySpreadMs = 2000
                 }
             ]
         };

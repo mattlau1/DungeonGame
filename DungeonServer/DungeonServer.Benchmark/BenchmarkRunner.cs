@@ -123,15 +123,24 @@ public class BenchmarkRunner
         _metrics.StartTest(_config.TestDurationSeconds);
 
         _players.Clear();
+        var random = new Random();
+        int nextPlayerId = 0;
 
         for (int i = 0; i < playerCount; i++)
         {
+            var lifetimeMs = scenario.EnableChurn 
+                ? random.Next(scenario.MinLifetimeMs, scenario.MaxLifetimeMs) 
+                : (int?)null;
+            var spawnDelayMs = scenario.EnableChurn ? random.Next(scenario.SpawnDelaySpreadMs) : 0;
+
             var player = new VirtualPlayer(
-                i,
+                nextPlayerId++,
                 _config.ServerUrl,
                 _metrics,
                 scenario.EnableRoomTransitions,
-                scenario.MovementHz);
+                scenario.MovementHz,
+                lifetimeMs,
+                spawnDelayMs);
             _players.Add(player);
             await player.ConnectAndSpawnAsync();
             await Task.Delay(20, _cancellationToken);
@@ -148,6 +157,43 @@ public class BenchmarkRunner
         while (stopwatch.Elapsed.TotalSeconds < _config.TestDurationSeconds)
         {
             await Task.Delay(1000, _cancellationToken);
+
+            if (scenario.EnableChurn)
+            {
+                var now = DateTime.UtcNow;
+                var toRespawn = new List<VirtualPlayer>();
+
+                foreach (var player in _players)
+                {
+                    if (player.MaxLifetimeMs.HasValue)
+                    {
+                        var elapsed = (now - player.CreatedAt).TotalMilliseconds;
+                        if (elapsed > player.MaxLifetimeMs.Value)
+                        {
+                            toRespawn.Add(player);
+                        }
+                    }
+                }
+
+                foreach (var player in toRespawn)
+                {
+                    await player.DisconnectAsync();
+                    _players.Remove(player);
+
+                    var newLifetimeMs = random.Next(scenario.MinLifetimeMs, scenario.MaxLifetimeMs);
+                    var newPlayer = new VirtualPlayer(
+                        nextPlayerId++,
+                        _config.ServerUrl,
+                        _metrics,
+                        scenario.EnableRoomTransitions,
+                        scenario.MovementHz,
+                        newLifetimeMs,
+                        0);
+                    await newPlayer.ConnectAndSpawnAsync();
+                    _players.Add(newPlayer);
+                    _ = newPlayer.StartMovementLoopAsync();
+                }
+            }
 
             var snapshot = _metrics.GetSnapshot();
             _dashboard.UpdateMetrics(snapshot);
