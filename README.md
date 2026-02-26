@@ -1,6 +1,6 @@
 # DungeonGame
 
-> Multiplayer 2D top-down MMORPG built with .NET 8 and C++ (WIP)
+> 2D Multiplayer MMORPG built with .NET 8 and C++ (WIP)
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/)
 [![gRPC](https://img.shields.io/badge/gRPC-blue.svg)](https://grpc.io/)
