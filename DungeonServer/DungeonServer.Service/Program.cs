@@ -8,7 +8,6 @@ using DungeonServer.Application.Core.Rooms.Contracts;
 using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.External;
-using DungeonServer.Infrastructure.Caching;
 using DungeonServer.Infrastructure.Caching.Generic;
 using DungeonServer.Infrastructure.Caching.Player;
 using DungeonServer.Infrastructure.EntityFramework;

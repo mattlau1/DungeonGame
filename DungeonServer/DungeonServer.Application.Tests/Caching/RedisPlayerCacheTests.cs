@@ -1,10 +1,6 @@
-using DungeonServer.Infrastructure.Caching;
 using DungeonServer.Infrastructure.Caching.Generic;
 using DungeonServer.Infrastructure.Caching.Player;
-using DungeonGame.Core;
-using Google.Protobuf;
 using Moq;
-using StackExchange.Redis;
 using Xunit;
 using PlayerInfo = DungeonGame.Core.PlayerInfo;
 

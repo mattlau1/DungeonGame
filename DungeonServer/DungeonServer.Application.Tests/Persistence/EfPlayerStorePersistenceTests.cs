@@ -1,5 +1,4 @@
 using DungeonServer.Application.Core.Player.Models;
-using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Shared;
 using DungeonServer.Infrastructure.Caching.Player;
 using DungeonServer.Infrastructure.EntityFramework;

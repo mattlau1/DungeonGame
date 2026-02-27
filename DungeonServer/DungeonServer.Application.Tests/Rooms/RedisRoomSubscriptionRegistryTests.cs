@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Net;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
-using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
 using DungeonServer.Infrastructure.InMemory.Player;
 using DungeonServer.Infrastructure.Messaging.Rooms;

@@ -3,7 +3,6 @@ using DungeonServer.Application.Core.Movement.Controllers;
 using DungeonServer.Application.Core.Player.Controllers;
 using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Controllers;
-using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Infrastructure.InMemory.Player;
 using DungeonServer.Infrastructure.InMemory.Rooms;
 using DungeonServer.Infrastructure.Messaging.Rooms;
