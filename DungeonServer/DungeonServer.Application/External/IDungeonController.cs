@@ -1,14 +1,14 @@
 using DungeonServer.Application.Core.Movement.Contracts;
-using DungeonServer.Application.Core.Player.Contracts;
+using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 
 namespace DungeonServer.Application.External;
 
 public interface IDungeonController
 {
-    Task<PlayerInfoResult> SpawnPlayerAsync(CancellationToken ct);
+    Task<PlayerInfo> SpawnPlayerAsync(CancellationToken ct);
 
-    Task<PlayerInfoResult> GetPlayerInfoAsync(int playerId, CancellationToken ct);
+    Task<PlayerInfo> GetPlayerInfoAsync(int playerId, CancellationToken ct);
 
     Task<MovementInputResponse> SetMovementInputAsync(int playerId, float inputX, float inputY, CancellationToken ct);
 

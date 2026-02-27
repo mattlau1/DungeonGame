@@ -1,14 +1,12 @@
 using DungeonGame.Core;
 using DungeonServer.Service.Mappings.Core;
-using DungeonServer.Service.Mappings.Shared;
-using DungeonServer.Application.Core.Movement.Models;
 using DungeonServer.Application.Core.Movement.Contracts;
-using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.External;
 using Grpc.Core;
 using PlayerInfo = DungeonGame.Core.PlayerInfo;
+using AppPlayerInfo = DungeonServer.Application.Core.Player.Models.PlayerInfo;
 
 namespace DungeonServer.Service.Services.Core;
 
@@ -131,14 +129,13 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
 
     public override async Task<PlayerInfo> SpawnPlayer(SpawnRequest request, ServerCallContext context)
     {
-        PlayerInfoResult result = await _dungeonController.SpawnPlayerAsync(context.CancellationToken);
+        AppPlayerInfo result = await _dungeonController.SpawnPlayerAsync(context.CancellationToken);
         return result.ToProto();
     }
 
     public override async Task<PlayerInfo> GetPlayerInfo(PlayerInfoRequest request, ServerCallContext context)
     {
-        PlayerInfoResult result =
-            await _dungeonController.GetPlayerInfoAsync(request.PlayerId, context.CancellationToken);
+        AppPlayerInfo result = await _dungeonController.GetPlayerInfoAsync(request.PlayerId, context.CancellationToken);
         return result.ToProto();
     }
 

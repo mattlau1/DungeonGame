@@ -29,12 +29,12 @@ public sealed class DungeonController : IDungeonController
         _movementManager = movementManager;
     }
 
-    public async Task<PlayerInfoResult> SpawnPlayerAsync(CancellationToken ct)
+    public async Task<PlayerInfo> SpawnPlayerAsync(CancellationToken ct)
     {
         return await _playerManager.SpawnPlayerAsync(ct);
     }
 
-    public async Task<PlayerInfoResult> GetPlayerInfoAsync(int playerId, CancellationToken ct)
+    public async Task<PlayerInfo> GetPlayerInfoAsync(int playerId, CancellationToken ct)
     {
         PlayerSnapshot? player = await _playerStore.GetPlayerAsync(playerId, ct);
         if (player == null)
@@ -42,9 +42,7 @@ public sealed class DungeonController : IDungeonController
             throw new KeyNotFoundException($"Player Id {playerId} does not exist.");
         }
 
-        var playerInfo = new PlayerInfo { Id = player.PlayerId, RoomId = player.RoomId, Location = player.Location };
-
-        return new PlayerInfoResult(player.RoomId, playerInfo);
+        return player.ToPlayerInfo();
     }
 
     public async Task<MovementInputResponse> SetMovementInputAsync(

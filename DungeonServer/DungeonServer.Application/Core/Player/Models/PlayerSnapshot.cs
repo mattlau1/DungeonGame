@@ -11,4 +11,9 @@ public sealed record PlayerSnapshot(int PlayerId, int RoomId, Location Location,
     {
         return new PlayerSnapshot(playerInfo.Id, playerInfo.RoomId, playerInfo.Location, playerInfo.IsOnline);
     }
+
+    public PlayerInfo ToPlayerInfo()
+    {
+        return new PlayerInfo { Id = PlayerId, RoomId = RoomId, Location = Location, IsOnline = IsOnline };
+    }
 }

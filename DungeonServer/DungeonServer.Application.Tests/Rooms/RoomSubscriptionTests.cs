@@ -15,7 +15,7 @@ public class RoomSubscriptionTests
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
+        PlayerInfo player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
         using var cts = new CancellationTokenSource();
 
         Task subscribeTask = Task.Run(async () =>
@@ -23,8 +23,8 @@ public class RoomSubscriptionTests
             try
             {
                 await foreach (RoomPlayerUpdate snapshot in deps.Controller.SubscribeRoomAsync(
-                                   player.PlayerInfo.Id,
-                                   player.PlayerInfo.RoomId,
+                                   player.Id,
+                                   player.RoomId,
                                    cts.Token))
                 {
                     break;
@@ -47,9 +47,9 @@ public class RoomSubscriptionTests
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult first = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-        Location firstLocation = first.PlayerInfo.Location;
-        int roomId = first.PlayerInfo.RoomId;
+        PlayerInfo first = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
+        Location firstLocation = first.Location;
+        int roomId = first.RoomId;
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var snapshots = new List<RoomPlayerUpdate>();
@@ -59,7 +59,7 @@ public class RoomSubscriptionTests
             try
             {
                 await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
-                                   first.PlayerInfo.Id,
+                                   first.Id,
                                    roomId,
                                    cts.Token))
                 {
@@ -88,7 +88,7 @@ public class RoomSubscriptionTests
         {
             await enumerateTask;
                 bool foundCombined = snapshots.Any(s =>
-                    s.Players.Any(p => p.PlayerId == first.PlayerInfo.Id) && s.Players.Any(p => p.PlayerId == second.PlayerId));
+                    s.Players.Any(p => p.PlayerId == first.Id) && s.Players.Any(p => p.PlayerId == second.PlayerId));
             Assert.True(foundCombined, "Did not observe a snapshot including both players after the second joined");
         }
     }
@@ -120,10 +120,10 @@ public class RoomSubscriptionTests
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-        int roomId = player1.PlayerInfo.RoomId;
+        PlayerInfo player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
+        int roomId = player1.RoomId;
 
-        PlayerInfoResult player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
+        PlayerInfo player2 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
@@ -133,7 +133,7 @@ public class RoomSubscriptionTests
             try
             {
                 await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
-                                   player1.PlayerInfo.Id,
+                                   player1.Id,
                                    roomId,
                                    cts.Token))
                 {
@@ -152,7 +152,7 @@ public class RoomSubscriptionTests
             try
             {
                 await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
-                                   player2.PlayerInfo.Id,
+                                   player2.Id,
                                    roomId,
                                    cts.Token))
                 {
@@ -183,8 +183,8 @@ public class RoomSubscriptionTests
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-        int roomId = player.PlayerInfo.RoomId;
+        PlayerInfo player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
+        int roomId = player.RoomId;
 
         await Task.Delay(100);
 
@@ -200,7 +200,7 @@ public class RoomSubscriptionTests
             try
             {
                 await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
-                                   player.PlayerInfo.Id,
+                                   player.Id,
                                    roomId,
                                    cts.Token))
                 {
@@ -234,15 +234,15 @@ public class RoomSubscriptionTests
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
 
-        PlayerInfoResult player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-        int roomId = player1.PlayerInfo.RoomId;
+        PlayerInfo player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
+        int roomId = player1.RoomId;
 
         await Task.Delay(100);
 
         // Publish an update that excludes this player (simulating they triggered it)
         await deps.RoomStore.PublishRoomUpdateAsync(
             roomId,
-            RoomUpdateContext.ExcludePlayer(player1.PlayerInfo.Id),
+            RoomUpdateContext.ExcludePlayer(player1.Id),
             CancellationToken.None);
 
         await Task.Delay(100);
@@ -255,7 +255,7 @@ public class RoomSubscriptionTests
             try
             {
                 await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
-                                   player1.PlayerInfo.Id,
+                                   player1.Id,
                                    roomId,
                                    cts.Token))
                 {

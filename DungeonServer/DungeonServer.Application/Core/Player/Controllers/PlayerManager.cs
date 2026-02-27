@@ -21,9 +21,9 @@ public class PlayerManager : IPlayerManager
         _roomStore = roomStore;
     }
 
-    public async Task<PlayerInfoResult> SpawnPlayerAsync(CancellationToken ct)
+    public async Task<PlayerInfo> SpawnPlayerAsync(CancellationToken ct)
     {
-        PlayerInfoResult? existingJoin = await TryJoinExistingRoomAsync(ct);
+        PlayerInfo? existingJoin = await TryJoinExistingRoomAsync(ct);
         if (existingJoin is not null)
         {
             return existingJoin;
@@ -32,7 +32,7 @@ public class PlayerManager : IPlayerManager
         return await SpawnPlayerInNewRoom(ct);
     }
 
-    private async Task<PlayerInfoResult> SpawnPlayerInNewRoom(CancellationToken ct)
+    private async Task<PlayerInfo> SpawnPlayerInNewRoom(CancellationToken ct)
     {
         var request = new GenerateRoomRequest();
         GenerateRoomResult startingRoom = await _dungeonArchitect.GenerateRoomAsync(request, ct);
@@ -44,7 +44,7 @@ public class PlayerManager : IPlayerManager
         return await SpawnPlayerAtRoom(startingRoom.RoomStateSnapshot.RoomId, spawnLocation, ct);
     }
 
-    private async Task<PlayerInfoResult?> TryJoinExistingRoomAsync(CancellationToken ct)
+    private async Task<PlayerInfo?> TryJoinExistingRoomAsync(CancellationToken ct)
     {
         PlayerSnapshot? occupant = await _playerStore.GetFirstActivePlayerAsync(ct);
 
@@ -56,7 +56,7 @@ public class PlayerManager : IPlayerManager
         return await SpawnPlayerAtRoom(occupant.RoomId, occupant.Location, ct);
     }
 
-    private async Task<PlayerInfoResult> SpawnPlayerAtRoom(int roomId, Location location, CancellationToken ct)
+    private async Task<PlayerInfo> SpawnPlayerAtRoom(int roomId, Location location, CancellationToken ct)
     {
         PlayerSnapshot player = await _playerStore.CreatePlayerAsync(location, ct);
 
@@ -68,14 +68,12 @@ public class PlayerManager : IPlayerManager
             roomId,
             ct);
 
-        var playerInfo = new PlayerInfo
+        return new PlayerInfo
         {
             Id = updated.PlayerId,
             RoomId = updated.RoomId,
             Location = updated.Location
         };
-
-        return new PlayerInfoResult(roomId, playerInfo);
     }
 
     public async Task DisconnectPlayerAsync(int playerId, CancellationToken ct)
