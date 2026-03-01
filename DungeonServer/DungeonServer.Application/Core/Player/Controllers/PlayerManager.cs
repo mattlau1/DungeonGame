@@ -1,3 +1,4 @@
+using DungeonServer.Application.Core.Movement.Controllers;
 using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Player.Storage;
@@ -12,12 +13,18 @@ public class PlayerManager : IPlayerManager
     private readonly IDungeonArchitect _dungeonArchitect;   
     private readonly IPlayerStore _playerStore;
     private readonly IRoomStore _roomStore;
+    private readonly PlayerStateManager _playerStateManager;
 
-    public PlayerManager(IDungeonArchitect dungeonArchitect, IPlayerStore playerStore, IRoomStore roomStore)
+    public PlayerManager(
+        IDungeonArchitect dungeonArchitect,
+        IPlayerStore playerStore,
+        IRoomStore roomStore,
+        PlayerStateManager playerStateManager)
     {
         _dungeonArchitect = dungeonArchitect;
         _playerStore = playerStore;
         _roomStore = roomStore;
+        _playerStateManager = playerStateManager;
     }
 
     public async Task<PlayerInfo> SpawnPlayerAsync(CancellationToken ct)
@@ -67,6 +74,8 @@ public class PlayerManager : IPlayerManager
             roomId,
             ct);
 
+        _playerStateManager.AddPlayerToRoom(updated.PlayerId, updated.RoomId, updated.Location);
+
         return new PlayerInfo
         {
             Id = updated.PlayerId,
@@ -87,6 +96,8 @@ public class PlayerManager : IPlayerManager
         {
             await _roomStore.RemovePlayerFromRoomAsync(player.RoomId, playerId, ct);
         }
+
+        _playerStateManager.RemovePlayerFromRoom(playerId);
 
         await _playerStore.DisconnectPlayerAsync(playerId, ct);
     }

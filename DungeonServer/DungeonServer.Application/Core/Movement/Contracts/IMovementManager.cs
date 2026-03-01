@@ -1,6 +1,10 @@
+using DungeonServer.Application.Core.Movement.Models;
+using DungeonServer.Application.Core.Player.Models;
+using DungeonServer.Application.Core.Rooms.Models;
+
 namespace DungeonServer.Application.Core.Movement.Contracts;
 
 public interface IMovementManager
 {
-    Task<MovementInputResponse> SetMovementInput(int playerId, float inputX, float inputY, CancellationToken ct);
+    Task SimulatePhysics(PlayerState player, List<InputCommand> commands, RoomStateSnapshot? room, CancellationToken ct);
 }

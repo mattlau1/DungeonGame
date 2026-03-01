@@ -2,27 +2,14 @@ syntax = "proto3";
 
 package dungeon_game.core;
 
-import "Shared/shared_types.proto";
-
-message SetMovementInputRequest {
+message InputCommandRequest {
   int32 player_id = 1;
 
   // Desired movement direction. Typical values are in [-1, 1].
   // (0,0) means "stop".
   float input_x = 2;
   float input_y = 3;
-}
 
-message SetMovementInputResponse {
-  MovementInputStatusResult status_response = 1;
-  dungeon_game.shared.Location authoritative_location = 2;
-  int32 room_id = 3;
-}
-
-enum MovementInputStatusResult {
-  MOVEMENT_INPUT_STATUS_RESULT_UNSPECIFIED = 0;
-  MOVEMENT_INPUT_STATUS_RESULT_OK = 1;
-  MOVEMENT_INPUT_STATUS_RESULT_BLOCKED = 2;
-  MOVEMENT_INPUT_STATUS_RESULT_INVALID_PLAYER = 3;
-  MOVEMENT_INPUT_STATUS_RESULT_TOO_FAST = 4;
+  // Sequence number from client for ordering/reconciliation
+  uint32 sequence = 4;
 }

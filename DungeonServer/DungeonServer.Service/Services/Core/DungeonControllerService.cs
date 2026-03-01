@@ -1,12 +1,14 @@
 using DungeonGame.Core;
 using DungeonServer.Service.Mappings.Core;
 using DungeonServer.Application.Core.Movement.Contracts;
+using DungeonServer.Application.Core.Movement.Models;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.External;
 using Grpc.Core;
 using PlayerInfo = DungeonGame.Core.PlayerInfo;
 using AppPlayerInfo = DungeonServer.Application.Core.Player.Models.PlayerInfo;
+using MovementInput = DungeonServer.Application.Core.Movement.Models.MovementInput;
 
 namespace DungeonServer.Service.Services.Core;
 
@@ -74,9 +76,9 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         }
     }
 
-    public override async Task SetMovementInput(
-        IAsyncStreamReader<SetMovementInputRequest> requestStream,
-        IServerStreamWriter<SetMovementInputResponse> responseStream,
+    public override async Task SendInputCommand(
+        IAsyncStreamReader<InputCommandRequest> requestStream,
+        IServerStreamWriter<Google.Protobuf.WellKnownTypes.Empty> responseStream,
         ServerCallContext context)
     {
         int? lastPlayerId = null;
@@ -84,18 +86,22 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         {
             while (await requestStream.MoveNext())
             {
-                SetMovementInputRequest request = requestStream.Current;
+                InputCommandRequest request = requestStream.Current;
                 lastPlayerId = request.PlayerId;
 
-                MovementInputResponse appResponse = await _dungeonController.SetMovementInputAsync(
-                    request.PlayerId,
-                    request.InputX,
-                    request.InputY,
-                    context.CancellationToken);
+                var inputCommand = new InputCommand
+                {
+                    PlayerId = request.PlayerId,
+                    Sequence = request.Sequence,
+                    ClientTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    Input = new MovementInput
+                    {
+                        MoveX = request.InputX,
+                        MoveY = request.InputY
+                    }
+                };
 
-                SetMovementInputResponse grpcResponse = appResponse.ToProto();
-
-                await responseStream.WriteAsync(grpcResponse);
+                await _dungeonController.SendInputCommandAsync(inputCommand, context.CancellationToken);
 
                 if (context.CancellationToken.IsCancellationRequested)
                 {
@@ -105,7 +111,6 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         }
         catch (OperationCanceledException)
         {
-            // Normal disconnection
         }
         catch (IOException)
         {

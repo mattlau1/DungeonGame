@@ -10,13 +10,13 @@ public interface IDungeonController
 
     Task<PlayerInfo> GetPlayerInfoAsync(int playerId, CancellationToken ct);
 
-    Task<MovementInputResponse> SetMovementInputAsync(int playerId, float inputX, float inputY, CancellationToken ct);
+    Task SendInputCommandAsync(InputCommand command, CancellationToken ct);
 
     IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct);
 
     Task DisconnectPlayerAsync(int playerId, CancellationToken ct);
 
     Task<int> GetActivePlayerCountAsync(CancellationToken ct);
-    
+
     Task<RoomStateSnapshot?> GetRoomAsync(int roomId, CancellationToken ct);
 }
