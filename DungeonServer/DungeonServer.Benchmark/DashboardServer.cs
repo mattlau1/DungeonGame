@@ -215,17 +215,19 @@ public class DashboardServer : IDisposable
                 WarmupSeconds = 0,
                 TestDurationSeconds = 60,
                 DashboardPort = _port,
-                Scenarios =
-                [
-                    new TestScenario
-                    {
-                        Name = "Fixed Player Counts",
-                        Description = "Tests fixed player counts to find capacity",
-                        PlayerCounts = [100, 250, 500, 750, 1000],
-                        MovementHz = 60,
-                        EnableRoomTransitions = false
-                    }
-                ]
+                Scenarios = BenchmarkScenarios.GetStressScenarios()
+            };
+        }
+
+        if (type == "quick")
+        {
+            return new BenchmarkConfig
+            {
+                ServerUrl = "http://localhost:5142",
+                WarmupSeconds = 1,
+                TestDurationSeconds = 10,
+                DashboardPort = _port,
+                Scenarios = BenchmarkScenarios.GetQuickScenarios()
             };
         }
 
@@ -235,59 +237,7 @@ public class DashboardServer : IDisposable
             WarmupSeconds = 3,
             TestDurationSeconds = 30,
             DashboardPort = _port,
-            Scenarios =
-            [
-                new TestScenario
-                {
-                    Name = "Single Room Capacity",
-                    Description = "Tests increasing player counts",
-                    PlayerCounts = [10, 50, 100, 150, 200],
-                    MovementHz = 60,
-                    EnableRoomTransitions = false
-                },
-
-                new TestScenario
-                {
-                    Name = "Movement Frequency Stress",
-                    Description = "Tests different movement rates",
-                    PlayerCount = 20,
-                    MovementRates = [10, 30, 60, 120],
-                    EnableRoomTransitions = false
-                },
-
-                new TestScenario
-                {
-                    Name = "EfPlayerStore_GetPlayerAsync_CacheStress",
-                    Description =
-                        "High player count with room subscriptions - tests GetPlayerAsync cache performance",
-                    PlayerCounts = [50, 200],
-                    MovementHz = 10,
-                    EnableRoomTransitions = false
-                },
-
-                new TestScenario
-                {
-                    Name = "EfPlayerStore_UpdateLocation_CacheStress",
-                    Description =
-                        "Moderate players with high movement rate - tests UpdateLocationAsync cache performance",
-                    PlayerCounts = [50, 150],
-                    MovementHz = 60,
-                    EnableRoomTransitions = false
-                },
-                new TestScenario
-                {
-                    Name = "EfPlayerStore_RandomChurn",
-                    Description =
-                        "Random player connect/disconnect churn with movement - tests GetPlayerAsync and GetActivePlayerCount caching",
-                    PlayerCounts = [50, 100],
-                    MovementHz = 10,
-                    EnableRoomTransitions = false,
-                    EnableChurn = true,
-                    MinLifetimeMs = 1000,
-                    MaxLifetimeMs = 5000,
-                    SpawnDelaySpreadMs = 2000
-                }
-            ]
+            Scenarios = BenchmarkScenarios.GetDefaultScenarios()
         };
     }
 
