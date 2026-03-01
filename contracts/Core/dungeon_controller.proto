@@ -11,7 +11,7 @@ import "google/protobuf/empty.proto";
 service DungeonController {
   rpc GetRoomInfo (RoomInfoRequest) returns (RoomInfo);
   rpc SubscribeRoom (SubscribeRoomRequest) returns (stream RoomSnapshot);
-  rpc SetMovementInput (stream SetMovementInputRequest) returns (stream SetMovementInputResponse);
+  rpc SendInputCommand (stream InputCommandRequest) returns (stream google.protobuf.Empty);
   rpc SpawnPlayer (SpawnRequest) returns (PlayerInfo);
   rpc GetPlayerInfo (PlayerInfoRequest) returns (PlayerInfo);
   rpc DisconnectPlayer (DisconnectRequest) returns (google.protobuf.Empty);

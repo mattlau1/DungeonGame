@@ -172,10 +172,11 @@ public class VirtualPlayer
 
         float localX = _x;
         float localY = _y;
+        uint sequence = 0;
 
         try
         {
-            using var movementStream = _client.SetMovementInput();
+            using var movementStream = _client.SendInputCommand();
 
             while (_isRunning && !_cts?.IsCancellationRequested == true)
             {
@@ -183,8 +184,6 @@ public class VirtualPlayer
                 {
                     break;
                 }
-
-                var stopwatch = Stopwatch.StartNew();
 
                 var (inputX, inputY) = CalculateMovementInput(localX, localY);
 
@@ -196,55 +195,12 @@ public class VirtualPlayer
                         cts.Token);
 
                     await movementStream.RequestStream.WriteAsync(
-                        new SetMovementInputRequest { PlayerId = _playerId, InputX = inputX, InputY = inputY },
+                        new InputCommandRequest { PlayerId = _playerId, InputX = inputX, InputY = inputY, Sequence = sequence++ },
                         linkedCts.Token);
 
-                    var moveNextTask = movementStream.ResponseStream.MoveNext(linkedCts.Token);
-                    if (await Task.WhenAny(moveNextTask, Task.Delay(5000, linkedCts.Token)) == moveNextTask &&
-                        moveNextTask.Result)
-                    {
-                        stopwatch.Stop();
-                        var response = movementStream.ResponseStream.Current;
-
-                        bool success = response.StatusResponse == MovementInputStatusResult.Ok;
-                        _metrics.RecordMovementLatency(stopwatch.Elapsed, success);
-
-                        float newX = response.AuthoritativeLocation.X;
-                        float newY = response.AuthoritativeLocation.Y;
-                        
-                        if (!_enableRoomTransitions)
-                        {
-                            const float margin = 1.0f;
-                            newX = Math.Clamp(newX, margin, _roomWidth - margin);
-                            newY = Math.Clamp(newY, margin, _roomHeight - margin);
-                        }
-                        
-                        localX = newX;
-                        localY = newY;
-                        _x = newX;
-                        _y = newY;
-
-                        if (success)
-                        {
-                            if (response.RoomId != _roomId)
-                            {
-                                _metrics.RecordRoomTransition();
-                                _roomId = response.RoomId;
-                            }
-
-                            _metrics.RecordPlayerLocation(_playerId, _x, _y, _roomId);
-                        }
-                        else
-                        {
-                            _metrics.RecordFailure(_playerId, "MovementRejected", $"Server rejected: {response.StatusResponse}. Pos: ({localX:F2},{localY:F2}) Room:{_roomId} RmSize:{_roomWidth}x{_roomHeight} Target:({inputX:F2},{inputY:F2})", stopwatch.Elapsed.TotalMilliseconds);
-                        }
-                    }
-                    else
-                    {
-                        stopwatch.Stop();
-                        _metrics.RecordMovementLatency(stopwatch.Elapsed, false);
-                        _metrics.RecordFailure(_playerId, "MovementTimeout", "Movement request timed out after 5 seconds - server not responding", stopwatch.Elapsed.TotalMilliseconds);
-                    }
+                    // Response is now Empty - we get position updates via SubscribeRoom instead
+                    // Just record successful send for latency metrics
+                    _metrics.RecordMovementLatency(TimeSpan.Zero, true);
                 }
                 catch (OperationCanceledException)
                 {
@@ -252,13 +208,11 @@ public class VirtualPlayer
                 }
                 catch (RpcException ex)
                 {
-                    _metrics.RecordMovementLatency(stopwatch.Elapsed, false);
-                    _metrics.RecordFailure(_playerId, $"RpcException_{ex.StatusCode}", ex.Message, stopwatch.Elapsed.TotalMilliseconds, ex.StackTrace);
+                    _metrics.RecordFailure(_playerId, $"RpcException_{ex.StatusCode}", ex.Message, 0, ex.StackTrace);
                 }
                 catch (Exception ex)
                 {
-                    _metrics.RecordMovementLatency(stopwatch.Elapsed, false);
-                    _metrics.RecordFailure(_playerId, ex.GetType().Name, ex.Message, stopwatch.Elapsed.TotalMilliseconds, ex.StackTrace);
+                    _metrics.RecordFailure(_playerId, ex.GetType().Name, ex.Message, 0, ex.StackTrace);
                 }
 
                 try

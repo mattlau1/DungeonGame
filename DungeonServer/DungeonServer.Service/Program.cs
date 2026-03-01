@@ -7,6 +7,8 @@ using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Contracts;
 using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Storage;
+using DungeonServer.Application.Core.TickSystem.Contracts;
+using DungeonServer.Application.Core.TickSystem.Controllers;
 using DungeonServer.Application.External;
 using DungeonServer.Infrastructure.Caching.Generic;
 using DungeonServer.Infrastructure.Caching.Player;
@@ -37,6 +39,11 @@ builder.Services.AddSingleton<IPlayerCache, RedisPlayerCache>();
 builder.Services.AddScoped<IPlayerStore, EfPlayerStore>();
 builder.Services.AddScoped<IRoomStore, EfRoomStore>();
 
+builder.Services.AddSingleton<PlayerInputManager>();
+builder.Services.AddSingleton<PlayerStateManager>();
+builder.Services.AddSingleton<RoomStateManager>();
+builder.Services.AddSingleton<ITickScheduler, TickRunner>();
+
 builder.Services.AddScoped<IPlayerManager, PlayerManager>();
 builder.Services.AddScoped<IDungeonArchitect, DungeonArchitect>();
 builder.Services.AddScoped<IDungeonController, DungeonController>();
@@ -44,6 +51,7 @@ builder.Services.AddScoped<IMovementManager, MovementManager>();
 
 WebApplication app = builder.Build();
 
+app.Services.GetRequiredService<ITickScheduler>().Start();
 app.MapGrpcService<DungeonControllerService>();
 
 app.MapGet("/", () => "Dungeon Game Service is live. Connect via gRPC.");
