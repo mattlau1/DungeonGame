@@ -168,13 +168,13 @@ public class EfRoomStore : IRoomStore
             throw new ArgumentException("Cannot link a room to itself.");
         }
 
-        var roomA = await _dbContext.Rooms.FindAsync(new object[] { roomIdA }, ct);
+        RoomEntity? roomA = await _dbContext.Rooms.FindAsync([roomIdA], ct);
         if (roomA == null)
         {
             throw new KeyNotFoundException($"Room Id {roomIdA} does not exist.");
         }
 
-        var roomB = await _dbContext.Rooms.FindAsync(new object[] { roomIdB }, ct);
+        RoomEntity? roomB = await _dbContext.Rooms.FindAsync([roomIdB], ct);
         if (roomB == null)
         {
             throw new KeyNotFoundException($"Room Id {roomIdB} does not exist.");
