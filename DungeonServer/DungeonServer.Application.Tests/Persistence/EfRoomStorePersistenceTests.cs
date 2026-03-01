@@ -17,7 +17,7 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
 {
     private readonly DbContextOptions<DungeonDbContext> _options;
     private readonly Mock<IPlayerCache> _mockPlayerCache;
-    private readonly DungeonDbContext _dbContext;
+    private readonly IDbContextFactory<DungeonDbContext> _contextFactory;
     private readonly EfRoomStore _roomStore;
     private readonly EfPlayerStore _playerStore;
     private readonly InMemoryRoomSubscriptionRegistry _registry;
@@ -34,17 +34,36 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
         _mockPlayerCache
             .Setup(x => x.GetOrSetAsync(It.IsAny<int>(), It.IsAny<Func<Task<PlayerInfo>>>(), It.IsAny<TimeSpan?>(), It.IsAny<CancellationToken>()))
             .Returns(async (int id, Func<Task<PlayerInfo>> factory, TimeSpan? expiry, CancellationToken ct) => await factory());
-        
-        _dbContext = new DungeonDbContext(_options);
-        _playerStore = new EfPlayerStore(_dbContext, _mockPlayerCache.Object);
+
+        _contextFactory = new TestDbContextFactory(_options);
+        _playerStore = new EfPlayerStore(_contextFactory, _mockPlayerCache.Object);
 
         _registry = new InMemoryRoomSubscriptionRegistry();
-        _roomStore = new EfRoomStore(_dbContext, _registry);
+        _roomStore = new EfRoomStore(_contextFactory, _registry);
     }
 
     public void Dispose()
     {
-        _dbContext.Dispose();
+    }
+
+    private class TestDbContextFactory : IDbContextFactory<DungeonDbContext>
+    {
+        private readonly DbContextOptions<DungeonDbContext> _options;
+
+        public TestDbContextFactory(DbContextOptions<DungeonDbContext> options)
+        {
+            _options = options;
+        }
+
+        public DungeonDbContext CreateDbContext()
+        {
+            return new DungeonDbContext(_options);
+        }
+
+        public Task<DungeonDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new DungeonDbContext(_options));
+        }
     }
 
     [Fact]
@@ -53,9 +72,9 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
         RoomState room = new RoomState(RoomType.Combat, 32, 24);
         RoomStateSnapshot created = await _roomStore.CreateRoomAsync(room, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
+        var newFactory = new TestDbContextFactory(_options);
         var newRegistry = new InMemoryRoomSubscriptionRegistry();
-        var newStore = new EfRoomStore(newContext, newRegistry);
+        var newStore = new EfRoomStore(newFactory, newRegistry);
 
         RoomStateSnapshot? retrieved = await newStore.GetRoomAsync(created.RoomId, CancellationToken.None);
 
@@ -77,9 +96,9 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
 
         await _roomStore.AddPlayerToRoomAsync(room.RoomId, player.PlayerId, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
+        var newFactory = new TestDbContextFactory(_options);
         var newRegistry = new InMemoryRoomSubscriptionRegistry();
-        var newStore = new EfRoomStore(newContext, newRegistry);
+        var newStore = new EfRoomStore(newFactory, newRegistry);
 
         RoomStateSnapshot? retrieved = await newStore.GetRoomAsync(room.RoomId, CancellationToken.None);
 
@@ -99,9 +118,9 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
         await _roomStore.AddPlayerToRoomAsync(room.RoomId, player.PlayerId, CancellationToken.None);
         await _roomStore.RemovePlayerFromRoomAsync(room.RoomId, player.PlayerId, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
+        var newFactory = new TestDbContextFactory(_options);
         var newRegistry = new InMemoryRoomSubscriptionRegistry();
-        var newStore = new EfRoomStore(newContext, newRegistry);
+        var newStore = new EfRoomStore(newFactory, newRegistry);
 
         RoomStateSnapshot? retrieved = await newStore.GetRoomAsync(room.RoomId, CancellationToken.None);
 
@@ -121,9 +140,9 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
 
         await _roomStore.LinkRoomsAsync(roomA.RoomId, roomB.RoomId, Direction.East, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
+        var newFactory = new TestDbContextFactory(_options);
         var newRegistry = new InMemoryRoomSubscriptionRegistry();
-        var newStore = new EfRoomStore(newContext, newRegistry);
+        var newStore = new EfRoomStore(newFactory, newRegistry);
 
         RoomStateSnapshot? retrievedA = await newStore.GetRoomAsync(roomA.RoomId, CancellationToken.None);
         RoomStateSnapshot? retrievedB = await newStore.GetRoomAsync(roomB.RoomId, CancellationToken.None);
@@ -151,9 +170,9 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
         await _roomStore.AddPlayerToRoomAsync(roomA.RoomId, player.PlayerId, CancellationToken.None);
         await _roomStore.SwapRoomsAsync(player.PlayerId, roomA.RoomId, roomB.RoomId, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
+        var newFactory = new TestDbContextFactory(_options);
         var newRegistry = new InMemoryRoomSubscriptionRegistry();
-        var newStore = new EfRoomStore(newContext, newRegistry);
+        var newStore = new EfRoomStore(newFactory, newRegistry);
 
         RoomStateSnapshot? retrievedA = await newStore.GetRoomAsync(roomA.RoomId, CancellationToken.None);
         RoomStateSnapshot? retrievedB = await newStore.GetRoomAsync(roomB.RoomId, CancellationToken.None);
@@ -181,9 +200,9 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
             await _roomStore.AddPlayerToRoomAsync(room.RoomId, p.PlayerId, CancellationToken.None);
         }
 
-        using var newContext = new DungeonDbContext(_options);
+        var newFactory = new TestDbContextFactory(_options);
         var newRegistry = new InMemoryRoomSubscriptionRegistry();
-        var newStore = new EfRoomStore(newContext, newRegistry);
+        var newStore = new EfRoomStore(newFactory, newRegistry);
 
         RoomStateSnapshot? retrieved = await newStore.GetRoomAsync(room.RoomId, CancellationToken.None);
 
@@ -200,8 +219,8 @@ public sealed class EfRoomStorePersistenceTests : IDisposable
     {
         PlayerSnapshot created = await _playerStore.CreatePlayerAsync(new Location(1f, 1f), CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
-        var newStore = new EfPlayerStore(newContext, _mockPlayerCache.Object);
+        var newFactory = new TestDbContextFactory(_options);
+        var newStore = new EfPlayerStore(newFactory, _mockPlayerCache.Object);
 
         PlayerSnapshot? retrieved = await newStore.GetPlayerAsync(created.PlayerId, CancellationToken.None);
 

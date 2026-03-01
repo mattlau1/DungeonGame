@@ -10,17 +10,19 @@ namespace DungeonServer.Infrastructure.EntityFramework.Stores.Rooms;
 
 public class EfRoomStore : IRoomStore
 {
-    private readonly DungeonDbContext _dbContext;
+    private readonly IDbContextFactory<DungeonDbContext> _contextFactory;
     private readonly IRoomSubscriptionRegistry _subscriptionRegistry;
 
-    public EfRoomStore(DungeonDbContext dbContext, IRoomSubscriptionRegistry subscriptionRegistry)
+    public EfRoomStore(IDbContextFactory<DungeonDbContext> contextFactory, IRoomSubscriptionRegistry subscriptionRegistry)
     {
-        _dbContext = dbContext;
+        _contextFactory = contextFactory;
         _subscriptionRegistry = subscriptionRegistry;
     }
 
     public async Task<RoomStateSnapshot> CreateRoomAsync(RoomState room, CancellationToken ct)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
         var roomEntity = new RoomEntity
         {
             Type = room.RoomType,
@@ -30,8 +32,8 @@ public class EfRoomStore : IRoomStore
             Exits = []
         };
 
-        _dbContext.Rooms.Add(roomEntity);
-        await _dbContext.SaveChangesAsync(ct);
+        context.Rooms.Add(roomEntity);
+        await context.SaveChangesAsync(ct);
 
         var playerUpdate = new RoomPlayerUpdate
         {
@@ -45,9 +47,10 @@ public class EfRoomStore : IRoomStore
 
     public async Task<RoomStateSnapshot> AddPlayerToRoomAsync(int roomId, int playerId, CancellationToken ct)
     {
-        await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(ct);
 
-        RoomEntity? room = await _dbContext.Rooms.Include(room => room.Occupants)
+        RoomEntity? room = await context.Rooms.Include(room => room.Occupants)
             .Include(room => room.Exits)
             .FirstOrDefaultAsync(room => room.Id == roomId, ct);
 
@@ -61,7 +64,7 @@ public class EfRoomStore : IRoomStore
             return ToSnapshot(room);
         }
 
-        PlayerEntity? player = await _dbContext.Players.FindAsync([playerId], ct);
+        PlayerEntity? player = await context.Players.FindAsync([playerId], ct);
 
         if (player == null)
         {
@@ -70,7 +73,7 @@ public class EfRoomStore : IRoomStore
 
         room.Occupants.Add(player);
 
-        await _dbContext.SaveChangesAsync(ct);
+        await context.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
         var playerUpdate = new RoomPlayerUpdate
@@ -85,9 +88,10 @@ public class EfRoomStore : IRoomStore
 
     public async Task<RoomStateSnapshot> RemovePlayerFromRoomAsync(int roomId, int playerId, CancellationToken ct)
     {
-        await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(ct);
 
-        RoomEntity? room = await _dbContext.Rooms.Include(r => r.Occupants)
+        RoomEntity? room = await context.Rooms.Include(r => r.Occupants)
             .Include(r => r.Exits)
             .FirstOrDefaultAsync(r => r.Id == roomId, ct);
 
@@ -104,7 +108,7 @@ public class EfRoomStore : IRoomStore
 
         room.Occupants.Remove(occupant);
 
-        await _dbContext.SaveChangesAsync(ct);
+        await context.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
         var playerUpdate = new RoomPlayerUpdate
@@ -119,7 +123,9 @@ public class EfRoomStore : IRoomStore
 
     public async Task<RoomStateSnapshot?> GetRoomAsync(int roomId, CancellationToken ct)
     {
-        RoomEntity? room = await _dbContext.Rooms.AsNoTracking()
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        RoomEntity? room = await context.Rooms.AsNoTracking()
             .Include(r => r.Occupants)
             .Include(r => r.Exits)
             .FirstOrDefaultAsync(r => r.Id == roomId, ct);
@@ -134,7 +140,9 @@ public class EfRoomStore : IRoomStore
 
     public async Task PublishRoomUpdateAsync(int roomId, RoomUpdateContext context, CancellationToken ct)
     {
-        RoomEntity? room = await _dbContext.Rooms.AsNoTracking()
+        await using var dbContext = await _contextFactory.CreateDbContextAsync(ct);
+
+        RoomEntity? room = await dbContext.Rooms.AsNoTracking()
             .Include(r => r.Occupants)
             .FirstOrDefaultAsync(r => r.Id == roomId, ct);
 
@@ -168,27 +176,29 @@ public class EfRoomStore : IRoomStore
             throw new ArgumentException("Cannot link a room to itself.");
         }
 
-        RoomEntity? roomA = await _dbContext.Rooms.FindAsync([roomIdA], ct);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        RoomEntity? roomA = await context.Rooms.FindAsync([roomIdA], ct);
         if (roomA == null)
         {
             throw new KeyNotFoundException($"Room Id {roomIdA} does not exist.");
         }
 
-        RoomEntity? roomB = await _dbContext.Rooms.FindAsync([roomIdB], ct);
+        RoomEntity? roomB = await context.Rooms.FindAsync([roomIdB], ct);
         if (roomB == null)
         {
             throw new KeyNotFoundException($"Room Id {roomIdB} does not exist.");
         }
 
-        await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+        await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(ct);
 
-        DbSet<RoomExitEntity> exitSet = _dbContext.Set<RoomExitEntity>();
+        DbSet<RoomExitEntity> exitSet = context.Set<RoomExitEntity>();
         Direction directionFromBToA = Helpers.GetOppositeDirection(directionFromAToB);
 
         await UpsertExit(roomIdA, directionFromAToB, roomIdB, exitSet, ct);
         await UpsertExit(roomIdB, directionFromBToA, roomIdA, exitSet, ct);
 
-        await _dbContext.SaveChangesAsync(ct);
+        await context.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
         await PublishRoomUpdateAsync(roomIdA, RoomUpdateContext.Broadcast(), ct);
@@ -216,9 +226,10 @@ public class EfRoomStore : IRoomStore
 
     public async Task SwapRoomsAsync(int playerId, int fromRoomId, int toRoomId, CancellationToken ct)
     {
-        await using IDbContextTransaction transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(ct);
 
-        List<RoomEntity> rooms = await _dbContext.Rooms.Include(r => r.Occupants)
+        List<RoomEntity> rooms = await context.Rooms.Include(r => r.Occupants)
             .Include(r => r.Exits)
             .Where(r => r.Id == fromRoomId || r.Id == toRoomId)
             .ToListAsync(ct);
@@ -244,7 +255,7 @@ public class EfRoomStore : IRoomStore
             toRoom.Occupants.Add(occupant);
         }
 
-        await _dbContext.SaveChangesAsync(ct);
+        await context.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
         var playerUpdateFrom = new RoomPlayerUpdate

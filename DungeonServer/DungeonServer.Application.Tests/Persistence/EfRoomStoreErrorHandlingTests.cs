@@ -13,11 +13,11 @@ using PlayerInfo = DungeonGame.Core.PlayerInfo;
 
 namespace DungeonServer.Application.Tests.Persistence;
 
-public sealed class EfRoomStoreErrorHandlingTests : IDisposable
+public sealed class EfRoomStoreErrorHandlingTests
 {
     private readonly DbContextOptions<DungeonDbContext> _options;
     private readonly Mock<IPlayerCache> _mockPlayerCache;
-    private readonly DungeonDbContext _dbContext;
+    private readonly IDbContextFactory<DungeonDbContext> _contextFactory;
     private readonly EfRoomStore _roomStore;
     private readonly EfPlayerStore _playerStore;
     private readonly InMemoryRoomSubscriptionRegistry _registry;
@@ -34,17 +34,32 @@ public sealed class EfRoomStoreErrorHandlingTests : IDisposable
         _mockPlayerCache
             .Setup(x => x.GetOrSetAsync(It.IsAny<int>(), It.IsAny<Func<Task<PlayerInfo>>>(), It.IsAny<TimeSpan?>(), It.IsAny<CancellationToken>()))
             .Returns(async (int id, Func<Task<PlayerInfo>> factory, TimeSpan? expiry, CancellationToken ct) => await factory());
-        
-        _dbContext = new DungeonDbContext(_options);
-        _playerStore = new EfPlayerStore(_dbContext, _mockPlayerCache.Object);
+
+        _contextFactory = new TestDbContextFactory(_options);
+        _playerStore = new EfPlayerStore(_contextFactory, _mockPlayerCache.Object);
 
         _registry = new InMemoryRoomSubscriptionRegistry();
-        _roomStore = new EfRoomStore(_dbContext, _registry);
+        _roomStore = new EfRoomStore(_contextFactory, _registry);
     }
 
-    public void Dispose()
+    private class TestDbContextFactory : IDbContextFactory<DungeonDbContext>
     {
-        _dbContext.Dispose();
+        private readonly DbContextOptions<DungeonDbContext> _options;
+
+        public TestDbContextFactory(DbContextOptions<DungeonDbContext> options)
+        {
+            _options = options;
+        }
+
+        public DungeonDbContext CreateDbContext()
+        {
+            return new DungeonDbContext(_options);
+        }
+
+        public Task<DungeonDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new DungeonDbContext(_options));
+        }
     }
 
     [Fact]

@@ -12,24 +12,26 @@ namespace DungeonServer.Infrastructure.EntityFramework.Stores.Player;
 
 public class EfPlayerStore : IPlayerStore
 {
-    private readonly DungeonDbContext _dbContext;
+    private readonly IDbContextFactory<DungeonDbContext> _contextFactory;
     private readonly IPlayerCache _playerCache;
 
-    public EfPlayerStore(DungeonDbContext dbContext, IPlayerCache playerCache)
+    public EfPlayerStore(IDbContextFactory<DungeonDbContext> contextFactory, IPlayerCache playerCache)
     {
-        _dbContext = dbContext;
+        _contextFactory = contextFactory;
         _playerCache = playerCache;
     }
 
     public async Task<PlayerSnapshot> CreatePlayerAsync(Location initialLocation, CancellationToken ct)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
         var playerEntity = new PlayerEntity
         {
             X = initialLocation.X, Y = initialLocation.Y, RoomId = RoomConstants.InvalidRoomId, IsOnline = true
         };
 
-        _dbContext.Players.Add(playerEntity);
-        await _dbContext.SaveChangesAsync(ct);
+        context.Players.Add(playerEntity);
+        await context.SaveChangesAsync(ct);
 
         var playerInfo = new PlayerInfoProto
         {
@@ -51,7 +53,9 @@ public class EfPlayerStore : IPlayerStore
         int roomId,
         CancellationToken ct)
     {
-        PlayerEntity? player = await _dbContext.Players.FindAsync([playerId], ct);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        PlayerEntity? player = await context.Players.FindAsync([playerId], ct);
         if (player == null)
         {
             throw new KeyNotFoundException($"Player Id {playerId} does not exist.");
@@ -61,7 +65,7 @@ public class EfPlayerStore : IPlayerStore
         player.Y = location.Y;
         player.RoomId = roomId;
 
-        await _dbContext.SaveChangesAsync(ct);
+        await context.SaveChangesAsync(ct);
 
         var playerInfo = new PlayerInfoProto
         {
@@ -82,7 +86,8 @@ public class EfPlayerStore : IPlayerStore
             playerId,
             async () =>
             {
-                PlayerEntity? player = await _dbContext.Players.FindAsync([playerId], ct);
+                await using var context = await _contextFactory.CreateDbContextAsync(ct);
+                PlayerEntity? player = await context.Players.FindAsync([playerId], ct);
                 if (player == null)
                 {
                     throw new KeyNotFoundException($"Player Id {playerId} does not exist.");
@@ -103,12 +108,14 @@ public class EfPlayerStore : IPlayerStore
 
     public async Task<int> GetActivePlayerCountAsync(CancellationToken ct)
     {
-        return await _dbContext.Players.CountAsync(player => player.IsOnline, ct);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        return await context.Players.CountAsync(player => player.IsOnline, ct);
     }
 
     public async Task<PlayerSnapshot?> GetFirstActivePlayerAsync(CancellationToken ct)
     {
-        PlayerEntity? firstPlayer = await _dbContext.Players.FirstOrDefaultAsync(
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+        PlayerEntity? firstPlayer = await context.Players.FirstOrDefaultAsync(
             (player) => player.IsOnline,
             ct);
         
@@ -122,7 +129,9 @@ public class EfPlayerStore : IPlayerStore
 
     public async Task DisconnectPlayerAsync(int playerId, CancellationToken ct)
     {
-        PlayerEntity? player = await _dbContext.Players.FindAsync([playerId], ct);
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        PlayerEntity? player = await context.Players.FindAsync([playerId], ct);
         if (player == null)
         {
             return;
@@ -130,7 +139,7 @@ public class EfPlayerStore : IPlayerStore
 
         player.IsOnline = false;
         
-        await _dbContext.SaveChangesAsync(ct);
+        await context.SaveChangesAsync(ct);
         
         await _playerCache.InvalidateAsync(playerId, ct);
         await _playerCache.InvalidateCountAsync(ct);

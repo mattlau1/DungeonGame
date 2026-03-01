@@ -14,7 +14,7 @@ public sealed class EfPlayerStorePersistenceTests : IDisposable
 {
     private readonly DbContextOptions<DungeonDbContext> _options;
     private readonly Mock<IPlayerCache> _mockPlayerCache;
-    private readonly DungeonDbContext _dbContext;
+    private readonly IDbContextFactory<DungeonDbContext> _contextFactory;
     private readonly EfPlayerStore _playerStore;
 
     public EfPlayerStorePersistenceTests()
@@ -28,14 +28,33 @@ public sealed class EfPlayerStorePersistenceTests : IDisposable
         _mockPlayerCache
             .Setup(x => x.GetOrSetAsync(It.IsAny<int>(), It.IsAny<Func<Task<PlayerInfo>>>(), It.IsAny<TimeSpan?>(), It.IsAny<CancellationToken>()))
             .Returns(async (int id, Func<Task<PlayerInfo>> factory, TimeSpan? expiry, CancellationToken ct) => await factory());
-        
-        _dbContext = new DungeonDbContext(_options);
-        _playerStore = new EfPlayerStore(_dbContext, _mockPlayerCache.Object);
+
+        _contextFactory = new TestDbContextFactory(_options);
+        _playerStore = new EfPlayerStore(_contextFactory, _mockPlayerCache.Object);
     }
 
     public void Dispose()
     {
-        _dbContext.Dispose();
+    }
+
+    private class TestDbContextFactory : IDbContextFactory<DungeonDbContext>
+    {
+        private readonly DbContextOptions<DungeonDbContext> _options;
+
+        public TestDbContextFactory(DbContextOptions<DungeonDbContext> options)
+        {
+            _options = options;
+        }
+
+        public DungeonDbContext CreateDbContext()
+        {
+            return new DungeonDbContext(_options);
+        }
+
+        public Task<DungeonDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new DungeonDbContext(_options));
+        }
     }
 
     [Fact]
@@ -44,8 +63,8 @@ public sealed class EfPlayerStorePersistenceTests : IDisposable
         var location = new Location(5f, 10f);
         PlayerSnapshot created = await _playerStore.CreatePlayerAsync(location, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
-        var newStore = new EfPlayerStore(newContext, _mockPlayerCache.Object);
+        var newFactory = new TestDbContextFactory(_options);
+        var newStore = new EfPlayerStore(newFactory, _mockPlayerCache.Object);
 
         PlayerSnapshot? retrieved = await newStore.GetPlayerAsync(created.PlayerId, CancellationToken.None);
 
@@ -63,8 +82,8 @@ public sealed class EfPlayerStorePersistenceTests : IDisposable
         var newLocation = new Location(100f, 200f);
         await _playerStore.UpdateLocationAsync(created.PlayerId, newLocation, 5, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
-        var newStore = new EfPlayerStore(newContext, _mockPlayerCache.Object);
+        var newFactory = new TestDbContextFactory(_options);
+        var newStore = new EfPlayerStore(newFactory, _mockPlayerCache.Object);
 
         PlayerSnapshot? retrieved = await newStore.GetPlayerAsync(created.PlayerId, CancellationToken.None);
 
@@ -81,8 +100,8 @@ public sealed class EfPlayerStorePersistenceTests : IDisposable
 
         await _playerStore.DisconnectPlayerAsync(created.PlayerId, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
-        var newStore = new EfPlayerStore(newContext, _mockPlayerCache.Object);
+        var newFactory = new TestDbContextFactory(_options);
+        var newStore = new EfPlayerStore(newFactory, _mockPlayerCache.Object);
 
         PlayerSnapshot? retrieved = await newStore.GetPlayerAsync(created.PlayerId, CancellationToken.None);
 
@@ -99,8 +118,8 @@ public sealed class EfPlayerStorePersistenceTests : IDisposable
 
         await _playerStore.DisconnectPlayerAsync(p1.PlayerId, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
-        var newStore = new EfPlayerStore(newContext, _mockPlayerCache.Object);
+        var newFactory = new TestDbContextFactory(_options);
+        var newStore = new EfPlayerStore(newFactory, _mockPlayerCache.Object);
 
         int count = await newStore.GetActivePlayerCountAsync(CancellationToken.None);
 
@@ -115,8 +134,8 @@ public sealed class EfPlayerStorePersistenceTests : IDisposable
 
         await _playerStore.DisconnectPlayerAsync(p1.PlayerId, CancellationToken.None);
 
-        using var newContext = new DungeonDbContext(_options);
-        var newStore = new EfPlayerStore(newContext, _mockPlayerCache.Object);
+        var newFactory = new TestDbContextFactory(_options);
+        var newStore = new EfPlayerStore(newFactory, _mockPlayerCache.Object);
 
         PlayerSnapshot? first = await newStore.GetFirstActivePlayerAsync(CancellationToken.None);
 

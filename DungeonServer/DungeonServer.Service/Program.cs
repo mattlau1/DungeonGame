@@ -27,7 +27,7 @@ string? redisConfiguration = builder.Configuration.GetSection("Redis:Configurati
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConfiguration));
 
 string? connectionString = builder.Configuration.GetConnectionString("DbConnection");
-builder.Services.AddDbContext<DungeonDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddDbContextFactory<DungeonDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddGrpc();
 
@@ -36,10 +36,10 @@ builder.Services.AddSingleton<IRoomSubscriptionRegistry, RedisRoomSubscriptionRe
 builder.Services.AddSingleton<IProtoCacheService, RedisProtoCacheService>();
 builder.Services.AddSingleton<IPlayerCache, RedisPlayerCache>();
 
-builder.Services.AddScoped<IPlayerStore, EfPlayerStore>();
-builder.Services.AddScoped<IRoomStore, EfRoomStore>();
+builder.Services.AddSingleton<IPlayerStore, EfPlayerStore>();
+builder.Services.AddSingleton<IRoomStore, EfRoomStore>();
 
-builder.Services.AddSingleton<PlayerInputManager>();
+builder.Services.AddSingleton<IPlayerInputManager, PlayerInputManager>();
 builder.Services.AddSingleton<PlayerStateManager>();
 builder.Services.AddSingleton<RoomStateManager>();
 builder.Services.AddSingleton<ITickScheduler, TickRunner>();
@@ -47,7 +47,7 @@ builder.Services.AddSingleton<ITickScheduler, TickRunner>();
 builder.Services.AddScoped<IPlayerManager, PlayerManager>();
 builder.Services.AddScoped<IDungeonArchitect, DungeonArchitect>();
 builder.Services.AddScoped<IDungeonController, DungeonController>();
-builder.Services.AddScoped<IMovementManager, MovementManager>();
+builder.Services.AddSingleton<IMovementManager, MovementManager>();
 
 WebApplication app = builder.Build();
 
