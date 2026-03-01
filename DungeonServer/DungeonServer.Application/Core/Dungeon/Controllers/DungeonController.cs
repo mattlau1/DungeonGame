@@ -13,17 +13,20 @@ public sealed class DungeonController : IDungeonController
     private readonly IPlayerManager _playerManager;
     private readonly IRoomStore _roomStore;
     private readonly IPlayerStore _playerStore;
+    private readonly IPlayerInputManager _playerInputManager;
     private readonly IMovementManager _movementManager;
 
     public DungeonController(
         IPlayerManager playerManager,
         IRoomStore roomStore,
         IPlayerStore playerStore,
+        IPlayerInputManager playerInputManager,
         IMovementManager movementManager)
     {
         _playerManager = playerManager;
         _roomStore = roomStore;
         _playerStore = playerStore;
+        _playerInputManager = playerInputManager;
         _movementManager = movementManager;
     }
 
@@ -42,14 +45,11 @@ public sealed class DungeonController : IDungeonController
 
         return player.ToPlayerInfo();
     }
-
-    public async Task<MovementInputResponse> SetMovementInputAsync(
-        int playerId,
-        float inputX,
-        float inputY,
-        CancellationToken ct)
+    
+    public Task SendInputCommandAsync(InputCommand command, CancellationToken ct)
     {
-        return await _movementManager.SetMovementInput(playerId, inputX, inputY, ct);
+        _playerInputManager.EnqueueCommand(command);                                                 
+        return Task.CompletedTask;  
     }
 
     public IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct)
