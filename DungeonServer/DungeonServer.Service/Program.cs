@@ -9,6 +9,7 @@ using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.TickSystem.Contracts;
 using DungeonServer.Application.Core.TickSystem.Controllers;
+using DungeonServer.Application.Core.TickSystem.Simulation;
 using DungeonServer.Application.External;
 using DungeonServer.Infrastructure.Caching.Generic;
 using DungeonServer.Infrastructure.Caching.Player;
@@ -39,10 +40,13 @@ builder.Services.AddSingleton<IPlayerCache, RedisPlayerCache>();
 builder.Services.AddSingleton<IPlayerStore, EfPlayerStore>();
 builder.Services.AddSingleton<IRoomStore, EfRoomStore>();
 
+builder.Services.AddSingleton<ISimulationQueue, SimulationQueue>();
+builder.Services.AddSingleton<ISimulation, PlayerSimulation>();
+builder.Services.AddSingleton<ITickScheduler, TickRunner>();
+
 builder.Services.AddSingleton<IPlayerInputManager, PlayerInputManager>();
 builder.Services.AddSingleton<PlayerStateManager>();
 builder.Services.AddSingleton<RoomStateManager>();
-builder.Services.AddSingleton<ITickScheduler, TickRunner>();
 
 builder.Services.AddScoped<IPlayerManager, PlayerManager>();
 builder.Services.AddScoped<IDungeonArchitect, DungeonArchitect>();

@@ -8,6 +8,7 @@ using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Shared;
 using DungeonServer.Application.Core.TickSystem.Contracts;
+using DungeonServer.Application.Core.TickSystem.Simulation;
 using DungeonServer.Infrastructure.InMemory.Player;
 using DungeonServer.Infrastructure.InMemory.Rooms;
 using DungeonServer.Infrastructure.Messaging.Rooms;
@@ -74,8 +75,9 @@ public static class TestHelpers
         var movementManager = new MovementManager(roomStore);
         var playerInputManager = new PlayerInputManager();
         var playerStateManager = new PlayerStateManager(playerStore);
+        var simulationQueue = new SimulationQueue();
         var architect = new DungeonArchitect(roomStore);
-        var playerManager = new PlayerManager(architect, playerStore, roomStore, playerStateManager);
+        var playerManager = new PlayerManager(architect, playerStore, roomStore, playerStateManager, simulationQueue);
         var controller = new DungeonController(playerManager, roomStore, playerStore, playerInputManager, movementManager);
         return new ControllerDependencies(
             controller,

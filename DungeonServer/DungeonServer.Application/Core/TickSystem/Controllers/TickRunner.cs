@@ -1,28 +1,24 @@
 using System.Collections.Concurrent;
-using DungeonServer.Application.Core.Movement.Contracts;
 using DungeonServer.Application.Core.Movement.Controllers;
 using DungeonServer.Application.Core.Movement.Models;
-using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Player.Models;
-using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Controllers;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.TickSystem.Contracts;
+using DungeonServer.Application.Core.TickSystem.Simulation;
 
 namespace DungeonServer.Application.Core.TickSystem.Controllers;
 
 public class TickRunner : ITickScheduler
 {
-    private readonly IPlayerInputManager _playerInputManager;
+    private readonly ISimulationQueue _simulationQueue;
     private readonly PlayerStateManager _playerStateManager;
-
     private readonly RoomStateManager _roomStateManager;
-
-    private readonly IMovementManager _movementManager;
     private readonly IRoomSubscriptionRegistry _subscriptionRegistry;
+    private readonly Dictionary<Type, ISimulation> _simulations;
 
-    private readonly ConcurrentDictionary<int, ulong> _roomTickNumbers = new(); // Room id -> Tick number
+    private readonly ConcurrentDictionary<int, ulong> _roomTickNumbers = new();
 
     private CancellationTokenSource? _cts;
 
@@ -30,17 +26,18 @@ public class TickRunner : ITickScheduler
     private const int PersistenceInterval = 64;
 
     public TickRunner(
-        IPlayerInputManager playerInputManager,
+        ISimulationQueue simulationQueue,
         PlayerStateManager playerStateManager,
         RoomStateManager roomStateManager,
-        IMovementManager movementManager,
-        IRoomSubscriptionRegistry subscriptionRegistry)
+        IRoomSubscriptionRegistry subscriptionRegistry,
+        IEnumerable<ISimulation> simulationHandlers)
     {
-        _playerInputManager = playerInputManager;
+        _simulationQueue = simulationQueue;
         _playerStateManager = playerStateManager;
         _roomStateManager = roomStateManager;
-        _movementManager = movementManager;
         _subscriptionRegistry = subscriptionRegistry;
+
+        _simulations = simulationHandlers.ToDictionary(s => s.GetType());
     }
 
     public void Start()
@@ -51,18 +48,13 @@ public class TickRunner : ITickScheduler
 
     public void Stop() => _cts?.Cancel();
 
-    /// <summary>
-    /// Process all rooms → Physics → Snapshots
-    /// </summary>
     private async Task TickLoop(CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
             Interlocked.Increment(ref _globalTickNumber);
 
-            IEnumerable<int> activeRoomIds = _playerStateManager.GetActiveRoomIds();
-
-            foreach (int roomId in activeRoomIds)
+            foreach (int roomId in _simulationQueue.GetActiveRooms())
             {
                 RoomStateSnapshot? room = await _roomStateManager.GetRoomStateAsync(roomId, ct);
                 if (room == null)
@@ -72,17 +64,13 @@ public class TickRunner : ITickScheduler
 
                 _roomTickNumbers.AddOrUpdate(roomId, 1, (_, old) => old + 1);
 
-                List<PlayerState> players = _playerStateManager.GetPlayersInRoom(roomId);
-                foreach (PlayerState player in players)
+                foreach (var simType in _simulationQueue.GetSimulationTypesForRoom(roomId))
                 {
-                    List<InputCommand> cmds = _playerInputManager.DequeueAllForPlayer(player.PlayerId);
-                    if (cmds.Count > 0)
-                    {
-                        await _movementManager.SimulatePhysics(player, cmds, room, ct);
-                        player.LastProcessedSequence = cmds[^1].Sequence;
-                    }
+                    var simulation = _simulations[simType];
+                    await simulation.SimulateAsync(room, ct);
                 }
 
+                List<PlayerState> players = _playerStateManager.GetPlayersInRoom(roomId);
                 List<PlayerSnapshot> playerUpdates = players.Select(p => new PlayerSnapshot(
                         p.PlayerId,
                         p.RoomId,

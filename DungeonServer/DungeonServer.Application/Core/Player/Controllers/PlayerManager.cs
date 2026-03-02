@@ -5,6 +5,7 @@ using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Contracts;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
+using DungeonServer.Application.Core.TickSystem.Simulation;
 
 namespace DungeonServer.Application.Core.Player.Controllers;
 
@@ -14,17 +15,20 @@ public class PlayerManager : IPlayerManager
     private readonly IPlayerStore _playerStore;
     private readonly IRoomStore _roomStore;
     private readonly PlayerStateManager _playerStateManager;
+    private readonly ISimulationQueue _simulationQueue;
 
     public PlayerManager(
         IDungeonArchitect dungeonArchitect,
         IPlayerStore playerStore,
         IRoomStore roomStore,
-        PlayerStateManager playerStateManager)
+        PlayerStateManager playerStateManager,
+        ISimulationQueue simulationQueue)
     {
         _dungeonArchitect = dungeonArchitect;
         _playerStore = playerStore;
         _roomStore = roomStore;
         _playerStateManager = playerStateManager;
+        _simulationQueue = simulationQueue;
     }
 
     public async Task<PlayerInfo> SpawnPlayerAsync(CancellationToken ct)
@@ -76,6 +80,12 @@ public class PlayerManager : IPlayerManager
 
         _playerStateManager.AddPlayerToRoom(updated.PlayerId, updated.RoomId, updated.Location);
 
+        // Register player input simulation if this is the first player in the room
+        if (_playerStateManager.GetPlayersInRoom(roomId).Count == 1)
+        {
+            _simulationQueue.Register(roomId, typeof(PlayerSimulation));
+        }
+
         return new PlayerInfo
         {
             Id = updated.PlayerId,
@@ -98,6 +108,12 @@ public class PlayerManager : IPlayerManager
         }
 
         _playerStateManager.RemovePlayerFromRoom(playerId);
+
+        // Unregister player input simulation if no players remain in the room
+        if (_playerStateManager.GetPlayersInRoom(player.RoomId).Count == 0)
+        {
+            _simulationQueue.Unregister(player.RoomId, typeof(PlayerSimulation));
+        }
 
         await _playerStore.DisconnectPlayerAsync(playerId, ct);
     }
