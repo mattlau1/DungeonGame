@@ -467,7 +467,7 @@
 
         document.getElementById('active-players').textContent = snapshot.activePlayers || 0;
         document.getElementById('rps').textContent = Math.round(snapshot.requestsPerSecond || 0).toLocaleString();
-        document.getElementById('p95-latency').textContent = Math.round(snapshot.movementLatency ? snapshot.movementLatency.p95 : 0) + 'ms';
+        document.getElementById('p95-latency').textContent = Math.round(snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p95 : 0) + 'ms';
 
         const total = (snapshot.successfulMovements || 0) + (snapshot.failedMovements || 0);
         const successRate = total > 0 ? ((snapshot.successfulMovements || 0) / total * 100).toFixed(1) : 100;
@@ -484,16 +484,16 @@
             throughputChart.data.labels = [];
             throughputChart.data.datasets[0].data = [];
             throughputChart.update();
-        } else if (snapshot.movementLatency && snapshot.movementLatency.p95 > 100) {
+        } else if (snapshot.roomUpdateLatency && snapshot.roomUpdateLatency.p95 > 100) {
             indicator.className = 'status-indicator status-danger';
-        } else if (snapshot.movementLatency && snapshot.movementLatency.p95 > 50) {
+        } else if (snapshot.roomUpdateLatency && snapshot.roomUpdateLatency.p95 > 50) {
             indicator.className = 'status-indicator status-warning';
         } else {
             indicator.className = 'status-indicator status-good';
         }
 
         const time = new Date(snapshot.timestamp.replace(/^\uFEFF/, '')).toLocaleTimeString();
-        console.log('Time:', time, 'P50:', snapshot.movementLatency ? snapshot.movementLatency.p50 : 'no data');
+        console.log('Time:', time, 'P50:', snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p50 : 'no data');
 
         try {
             if (latencyChart.data.labels.length > 60) {
@@ -503,9 +503,9 @@
                 });
             }
             latencyChart.data.labels.push(time);
-            latencyChart.data.datasets[0].data.push(snapshot.movementLatency ? snapshot.movementLatency.p50 || 0 : 0);
-            latencyChart.data.datasets[1].data.push(snapshot.movementLatency ? snapshot.movementLatency.p95 || 0 : 0);
-            latencyChart.data.datasets[2].data.push(snapshot.movementLatency ? snapshot.movementLatency.p99 || 0 : 0);
+            latencyChart.data.datasets[0].data.push(snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p50 || 0 : 0);
+            latencyChart.data.datasets[1].data.push(snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p95 || 0 : 0);
+            latencyChart.data.datasets[2].data.push(snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p99 || 0 : 0);
             latencyChart.update('none');
 
             if (throughputChart.data.labels.length > 60) {
@@ -519,22 +519,22 @@
             console.error('Chart update error:', e);
         }
 
-        maxLatency = Math.max(maxLatency, snapshot.movementLatency ? snapshot.movementLatency.max || 1 : 1);
+        maxLatency = Math.max(maxLatency, snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.max || 1 : 1);
 
-        document.getElementById('latency-min').style.width = ((snapshot.movementLatency ? snapshot.movementLatency.min || 0 : 0) / maxLatency * 100) + '%';
-        document.getElementById('latency-min-value').textContent = Math.round(snapshot.movementLatency ? snapshot.movementLatency.min || 0 : 0) + 'ms';
+        document.getElementById('latency-min').style.width = ((snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.min || 0 : 0) / maxLatency * 100) + '%';
+        document.getElementById('latency-min-value').textContent = Math.round(snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.min || 0 : 0) + 'ms';
 
-        document.getElementById('latency-p50').style.width = ((snapshot.movementLatency ? snapshot.movementLatency.p50 || 0 : 0) / maxLatency * 100) + '%';
-        document.getElementById('latency-p50-value').textContent = Math.round(snapshot.movementLatency ? snapshot.movementLatency.p50 || 0 : 0) + 'ms';
+        document.getElementById('latency-p50').style.width = ((snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p50 || 0 : 0) / maxLatency * 100) + '%';
+        document.getElementById('latency-p50-value').textContent = Math.round(snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p50 || 0 : 0) + 'ms';
 
-        document.getElementById('latency-p95').style.width = ((snapshot.movementLatency ? snapshot.movementLatency.p95 || 0 : 0) / maxLatency * 100) + '%';
-        document.getElementById('latency-p95-value').textContent = Math.round(snapshot.movementLatency ? snapshot.movementLatency.p95 || 0 : 0) + 'ms';
+        document.getElementById('latency-p95').style.width = ((snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p95 || 0 : 0) / maxLatency * 100) + '%';
+        document.getElementById('latency-p95-value').textContent = Math.round(snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p95 || 0 : 0) + 'ms';
 
-        document.getElementById('latency-p99').style.width = ((snapshot.movementLatency ? snapshot.movementLatency.p99 || 0 : 0) / maxLatency * 100) + '%';
-        document.getElementById('latency-p99-value').textContent = Math.round(snapshot.movementLatency ? snapshot.movementLatency.p99 || 0 : 0) + 'ms';
+        document.getElementById('latency-p99').style.width = ((snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p99 || 0 : 0) / maxLatency * 100) + '%';
+        document.getElementById('latency-p99-value').textContent = Math.round(snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.p99 || 0 : 0) + 'ms';
 
-        document.getElementById('latency-max').style.width = ((snapshot.movementLatency ? snapshot.movementLatency.max || 0 : 0) / maxLatency * 100) + '%';
-        document.getElementById('latency-max-value').textContent = Math.round(snapshot.movementLatency ? snapshot.movementLatency.max || 0 : 0) + 'ms';
+        document.getElementById('latency-max').style.width = ((snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.max || 0 : 0) / maxLatency * 100) + '%';
+        document.getElementById('latency-max-value').textContent = Math.round(snapshot.roomUpdateLatency ? snapshot.roomUpdateLatency.max || 0 : 0) + 'ms';
 
         document.getElementById('total-requests').textContent = (snapshot.totalMovementRequests || 0).toLocaleString();
         document.getElementById('successful').textContent = (snapshot.successfulMovements || 0).toLocaleString();
@@ -556,7 +556,7 @@
         for (let i = 0; i < results.length; i++) {
             const r = results[i];
             const m = r.metrics || {};
-            const lat = m.movementLatency || {};
+            const lat = m.roomUpdateLatency || {};
             const total = (m.successfulMovements || 0) + (m.failedMovements || 0);
             const success = total > 0 ? ((m.successfulMovements || 0) / total * 100).toFixed(1) : 100;
             const rowClass = success >= 99 ? 'text-green-400' : success >= 95 ? 'text-yellow-400' : 'text-red-400';

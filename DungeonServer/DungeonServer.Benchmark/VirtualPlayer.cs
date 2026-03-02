@@ -98,14 +98,29 @@ public class VirtualPlayer
             _subscriptionTask = Task.Run(
                 async () =>
                 {
+                    int updateCount = 0;
+                    var latencyStopwatch = new Stopwatch();
+                    
                     try
                     {
                         while (await roomStream.ResponseStream.MoveNext(_cts.Token))
                         {
-                            subscribeStopwatch.Stop();
+                            updateCount++;
                             var snapshot = roomStream.ResponseStream.Current;
-                            _metrics.RecordRoomUpdateLatency(subscribeStopwatch.Elapsed);
-                            subscribeStopwatch.Restart();
+                            
+                            // Start timing after first update (which is instant from cache)
+                            if (updateCount == 1)
+                            {
+                                latencyStopwatch.Start();
+                            }
+                            else
+                            {
+                                latencyStopwatch.Stop();
+                                var elapsed = latencyStopwatch.Elapsed;
+                                _metrics.RecordRoomUpdateLatency(elapsed);
+                                
+                                latencyStopwatch.Restart();
+                            }
 
                             // Update our knowledge of room state
                             foreach (var player in snapshot.Players)
