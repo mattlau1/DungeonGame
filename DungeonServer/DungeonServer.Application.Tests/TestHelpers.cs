@@ -50,8 +50,6 @@ public static class TestHelpers
     {
         public void Start() { }
         public void Stop() { }
-        public void RegisterRoom(int roomId) { }
-        public void UnregisterRoom(int roomId) { }
     }
 
     public record ControllerDependencies(
@@ -76,7 +74,7 @@ public static class TestHelpers
         var movementManager = new MovementManager(roomStore);
         var playerInputManager = new PlayerInputManager();
         var playerStateManager = new PlayerStateManager(playerStore);
-        var architect = new DungeonArchitect(roomStore, tickScheduler);
+        var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore, playerStateManager);
         var controller = new DungeonController(playerManager, roomStore, playerStore, playerInputManager, movementManager);
         return new ControllerDependencies(

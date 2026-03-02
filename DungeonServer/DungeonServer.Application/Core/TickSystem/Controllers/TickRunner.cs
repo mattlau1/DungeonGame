@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Collections.Immutable;
 using DungeonServer.Application.Core.Movement.Contracts;
 using DungeonServer.Application.Core.Movement.Controllers;
 using DungeonServer.Application.Core.Movement.Models;
@@ -23,7 +22,6 @@ public class TickRunner : ITickScheduler
     private readonly IMovementManager _movementManager;
     private readonly IRoomSubscriptionRegistry _subscriptionRegistry;
 
-    private ImmutableList<int> _roomIdsToTick = ImmutableList<int>.Empty;
     private readonly ConcurrentDictionary<int, ulong> _roomTickNumbers = new(); // Room id -> Tick number
 
     private CancellationTokenSource? _cts;
@@ -34,15 +32,15 @@ public class TickRunner : ITickScheduler
     public TickRunner(
         IPlayerInputManager playerInputManager,
         PlayerStateManager playerStateManager,
+        RoomStateManager roomStateManager,
         IMovementManager movementManager,
-        IRoomSubscriptionRegistry subscriptionRegistry,
-        RoomStateManager roomStateManager)
+        IRoomSubscriptionRegistry subscriptionRegistry)
     {
         _playerInputManager = playerInputManager;
         _playerStateManager = playerStateManager;
+        _roomStateManager = roomStateManager;
         _movementManager = movementManager;
         _subscriptionRegistry = subscriptionRegistry;
-        _roomStateManager = roomStateManager;
     }
 
     public void Start()
@@ -53,18 +51,6 @@ public class TickRunner : ITickScheduler
 
     public void Stop() => _cts?.Cancel();
 
-    public void RegisterRoom(int roomId)
-    {
-        Interlocked.Exchange(ref _roomIdsToTick, _roomIdsToTick.Add(roomId));
-        _roomTickNumbers.TryAdd(roomId, 0);
-    }
-
-    public void UnregisterRoom(int roomId)
-    {
-        Interlocked.Exchange(ref _roomIdsToTick, _roomIdsToTick.Remove(roomId));
-        _roomTickNumbers.TryRemove(roomId, out _);
-    }
-
     /// <summary>
     /// Process all rooms → Physics → Snapshots
     /// </summary>
@@ -74,9 +60,15 @@ public class TickRunner : ITickScheduler
         {
             Interlocked.Increment(ref _globalTickNumber);
 
-            foreach (int roomId in _roomIdsToTick)
+            IEnumerable<int> activeRoomIds = _playerStateManager.GetActiveRoomIds();
+
+            foreach (int roomId in activeRoomIds)
             {
-                RoomStateSnapshot? room = await _roomStateManager.GetRoomStateAsync(roomId, CancellationToken.None);
+                RoomStateSnapshot? room = await _roomStateManager.GetRoomStateAsync(roomId, ct);
+                if (room == null)
+                {
+                    continue;
+                }
 
                 _roomTickNumbers.AddOrUpdate(roomId, 1, (_, old) => old + 1);
 

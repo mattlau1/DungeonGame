@@ -48,6 +48,11 @@ public class PlayerStateManager
         return state;
     }
 
+    public IEnumerable<int> GetActiveRoomIds()
+    {
+        return _playerStates.Values.Select(p => p.RoomId).Distinct();
+    }
+
     public void UpdatePosition(int playerId, Location newPosition)
     {
         if (_playerStates.TryGetValue(playerId, out PlayerState? state))
