@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the server-side tick-based movement system, which is very loosely based on Valve's [Source Multiplayer Networking](https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking) model
+This document describes the server-side tick-based system, which is **very** loosely based on Valve's [Source Multiplayer Networking](https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking) model
 
 ## Core Principles
 
@@ -10,6 +10,7 @@ This document describes the server-side tick-based movement system, which is ver
 2. **Fixed Tick Rate**: Server runs at 64Hz (15.625ms per tick)
 3. **Client-Provided Sequence**: Clients send input commands with sequence numbers for ordering
 4. **In-Memory State**: Player state is kept in memory during gameplay, periodically persisted to DB
+5. **Simulation-Based**: Rooms tick only when they have registered simulations
 
 ## Architecture Diagram
 
@@ -29,11 +30,15 @@ flowchart TB
             PCQ[PlayerCommandQueue<br/>per player]
         end
 
-        subgraph "Tick System"
+        subgraph "Simulation System"
             TR[TickRunner<br/>64Hz loop]
+            SQ[SimulationQueue]
+            SIM[ISimulation<br/>handlers]
+        end
+
+        subgraph "State Management"
             PSM[PlayerStateManager]
             RSM[RoomStateManager]
-            MM[MovementManager<br/>SimulatePhysics]
         end
 
         subgraph "Output"
@@ -51,15 +56,25 @@ flowchart TB
     GS --> PIM
     PIM --> PCQ
     PCQ -.->|dequeue each tick| TR
-    TR <--> PSM
-    TR <--> RSM
-    TR <--> MM
+    TR <--> SQ
+    SQ -.->|runs| SIM
+    SIM --> PSM
+    SIM --> RSM
+    TR --> PSM
+    TR --> RSM
     TR --> RR
     RR --> Redis
     Redis -->|broadcast| C
     PSM -->|periodic save| PS
     PS --> DB
 ```
+
+## Simulation Queue Architecture
+
+The simulation queue allows fine-grained control over which rooms tick:
+- A room only ticks when it has registered simulations
+- Different simulation types can run in the same room (e.g. players + enemies + projectiles)
+- When all simulations are unregistered from a room, it stops ticking
 
 ## Data Flow
 
@@ -70,21 +85,19 @@ sequenceDiagram
     participant C as Client
     participant S as Server
     participant PIM as PlayerInputManager
+    participant SQ as SimulationQueue
     participant TR as TickRunner
 
-    C->>S: InputCommandRequest (input_x, input_y, sequence)
-    S->>PIM: SendInputCommandAsync(command)
+    C->>S: InputCommandRequest
+    S->>PIM: SendInputCommandAsync
     PIM->>PIM: Enqueue to player's channel
-    Note over PIM: Commands queued in Channel<InputCommand>
 
     loop Every 15ms (64Hz)
-        TR->>PIM: DequeueAllForPlayer(playerId)
-        TR->>TR: Run physics for each player
-        TR->>TR: Update in-memory position
-        TR->>S: Publish RoomPlayerUpdate via Redis
+        TR->>TR: Run each simulation for room
+        TR->>S: Publish Room Updates
     end
 
-    S-->>C: RoomSnapshot (positions via SubscribeRoom)
+    S-->>C: Room Snapshot (via SubscribeRoom)
 ```
 
 ### Tick Loop Flow
@@ -92,24 +105,19 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     A[Start Tick] --> B[Increment global tick counter]
-    B --> C[For each room]
-    C --> D[Get room state from cache]
-    D --> E[For each player in room]
-    E --> F[Dequeue commands from PlayerInputManager]
-    F --> G{Commands?}
-    G -->|Yes| H[Apply movement input to position]
-    G -->|No| I[Skip physics]
-    H --> J[Run physics - collision and room boundary check]
-    J --> K[Update LastProcessedSequence]
-    K --> I
-    I --> L[Build RoomPlayerUpdate snapshot]
-    L --> M[Publish via IRoomSubscriptionRegistry]
-    M --> N[Periodic save every 64 ticks?]
-    N -->|Yes| O[Save all player states to DB]
-    N -->|No| P[Next room]
-    O --> P
-    P --> Q[Task.Delay 15ms]
-    Q --> C
+    B --> C[Get active rooms from SimulationQueue]
+    C --> D{More rooms?}
+    D -->|Yes| E[Get next room]
+    D -->|No| P[Task.Delay 15ms]
+    E --> F[Get room state]
+    F --> G[Get simulation types for room]
+    G --> H{More simulations?}
+    H -->|Yes| I[Run Simulation]
+    I --> H
+    H -->|No| J[Build RoomPlayerUpdate snapshot]
+    J --> K[Publish via Redis Pub/Sub]
+    K --> D
+    P --> C
 ```
 
 ## Key Components
@@ -142,32 +150,29 @@ Client sends movement intent with:
 - Loads from DB on first access
 - Avoids DB query every tick
 
-### 5. TickRunner
+### 5. SimulationQueue
+
+- Tracks which simulation types are active per room
+- Uses `Type` directly (no enum needed)
+- Allows multiple simulation types per room
+- Auto-discovery via DI: TickRunner finds all `ISimulation` implementations
+
+### 6. TickRunner
 
 - 64Hz async task loop
-- Processes all rooms each tick
-- Gets room state from cache
-- Dequeues player commands
-- Runs physics for each player
+- Gets active rooms from SimulationQueue (not all rooms)
+- Runs all registered simulation types per room
 - Publishes snapshots to subscribers
 - Periodic database save every 64 ticks
-
-### 6. MovementManager.SimulatePhysics
-
-- Sums all input commands for the tick
-- Updates player position
-- Checks room boundaries
-- Handles room transitions if needed
-- Updates DB for room changes
-
 
 ## Persistence Strategy
 
 | Event | Action |
 |-------|--------|
-| Player spawns | Created in DB, added to PlayerStateManager |
+| Player spawns | Created in DB, added to PlayerStateManager, register PlayerSimulation |
 | During gameplay | In-memory only (no DB) |
 | Every 64 ticks (~1 sec) | Batch write all positions to DB |
+| Player disconnects | Remove from PlayerStateManager, unregister simulation if empty |
 | Room transition | Immediate DB update via SwapRoomsAsync |
 | Server crash | Players resume from last saved position |
 
