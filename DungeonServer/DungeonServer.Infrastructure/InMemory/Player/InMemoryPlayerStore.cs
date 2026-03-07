@@ -67,6 +67,24 @@ public class InMemoryPlayerStore : IPlayerStore
         }
     }
 
+    public Task UpdateLocationsBatchAsync(IEnumerable<PlayerUpdate> updates, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        foreach (var update in updates)
+        {
+            if (_players.TryGetValue(update.PlayerId, out LockablePlayerState? player))
+            {
+                var info = player.PlayerInfo;
+                info.Location = update.Location;
+                info.RoomId = update.RoomId;
+                player.PlayerInfo = info;
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
     public async Task<PlayerSnapshot?> GetPlayerAsync(int playerId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -101,7 +119,10 @@ public class InMemoryPlayerStore : IPlayerStore
             .OrderBy(p => p.PlayerInfo.Id)
             .FirstOrDefault();
 
-        if (player == null) return null;
+        if (player == null)
+        {
+            return null;
+        }
 
         await player.Gate.WaitAsync(ct);
         try

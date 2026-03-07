@@ -9,11 +9,13 @@ public interface IPlayerStore
 
     Task<PlayerSnapshot> UpdateLocationAsync(int playerId, Location location, int roomId, CancellationToken ct);
 
+    Task UpdateLocationsBatchAsync(IEnumerable<PlayerUpdate> updates, CancellationToken ct);
+
     Task<PlayerSnapshot?> GetPlayerAsync(int playerId, CancellationToken ct);
 
     Task<int> GetActivePlayerCountAsync(CancellationToken ct);
-    
+
     Task<PlayerSnapshot?> GetFirstActivePlayerAsync(CancellationToken ct);
-    
+
     Task DisconnectPlayerAsync(int playerId, CancellationToken ct);
 }

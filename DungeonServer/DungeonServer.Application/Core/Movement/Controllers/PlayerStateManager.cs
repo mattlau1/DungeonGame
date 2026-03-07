@@ -63,9 +63,9 @@ public class PlayerStateManager
 
     public async Task SaveAllToDatabaseAsync(CancellationToken ct)
     {
-        foreach (PlayerState player in _playerStates.Values)
-        {
-            await _playerStore.UpdateLocationAsync(player.PlayerId, player.Position, player.RoomId, ct);
-        }
+        IEnumerable<PlayerUpdate> updates =
+            _playerStates.Values.Select(p => new PlayerUpdate(p.PlayerId, p.Position, p.RoomId));
+
+        await _playerStore.UpdateLocationsBatchAsync(updates, ct);
     }
 }

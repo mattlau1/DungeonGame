@@ -35,6 +35,17 @@ public class RedisPlayerCache : IPlayerCache
             ct);
     }
 
+    public async Task SetManyAsync(
+        IEnumerable<(int PlayerId, PlayerInfo Value)> items,
+        TimeSpan? expiry = null,
+        CancellationToken ct = default)
+    {
+        TimeSpan expiryTime = expiry ?? TimeSpan.FromSeconds(30);
+        IEnumerable<Task> tasks = items.Select(i =>
+            _cache.SetAsync(PlayerCacheKeys.Player(i.PlayerId), i.Value, expiryTime, ct));
+        await Task.WhenAll(tasks);
+    }
+
     public async Task InvalidateAsync(int playerId, CancellationToken ct = default)
     {
         await _cache.DeleteAsync(PlayerCacheKeys.Player(playerId), ct);

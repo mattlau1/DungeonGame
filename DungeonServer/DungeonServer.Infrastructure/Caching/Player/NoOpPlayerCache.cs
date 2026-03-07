@@ -14,6 +14,11 @@ public class NoOpPlayerCache : IPlayerCache
         return Task.CompletedTask;
     }
 
+    public Task SetManyAsync(IEnumerable<(int PlayerId, PlayerInfo Value)> items, TimeSpan? expiry = null, CancellationToken ct = default)
+    {
+        return Task.CompletedTask;
+    }
+
     public Task InvalidateAsync(int playerId, CancellationToken ct = default)
     {
         return Task.CompletedTask;
