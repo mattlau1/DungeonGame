@@ -78,7 +78,7 @@ public class TickRunner : ITickScheduler
                         p.IsOnline))
                     .ToList();
 
-                var snapshot = new RoomPlayerUpdate { RoomId = roomId, Players = playerUpdates };
+                var snapshot = new RoomPlayerUpdate { Players = playerUpdates };
 
                 await _subscriptionRegistry.PublishUpdateAsync(
                     roomId,

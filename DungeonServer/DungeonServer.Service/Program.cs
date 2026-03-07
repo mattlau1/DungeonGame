@@ -18,6 +18,7 @@ using DungeonServer.Infrastructure.EntityFramework.Stores.Player;
 using DungeonServer.Infrastructure.EntityFramework.Stores.Rooms;
 using DungeonServer.Infrastructure.Messaging.Rooms;
 using DungeonServer.Service.Services.Core;
+using Grpc.AspNetCore.Server.Model;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 
@@ -48,14 +49,17 @@ builder.Services.AddSingleton<IPlayerInputManager, PlayerInputManager>();
 builder.Services.AddSingleton<PlayerStateManager>();
 builder.Services.AddSingleton<RoomStateManager>();
 
-builder.Services.AddScoped<IPlayerManager, PlayerManager>();
-builder.Services.AddScoped<IDungeonArchitect, DungeonArchitect>();
-builder.Services.AddScoped<IDungeonController, DungeonController>();
+builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
+builder.Services.AddSingleton<IDungeonArchitect, DungeonArchitect>();
+builder.Services.AddSingleton<IDungeonController, DungeonController>();
 builder.Services.AddSingleton<IMovementManager, MovementManager>();
+
+builder.Services.AddSingleton<IServiceMethodProvider<DungeonControllerService>, DungeonControllerMethodProvider>();
 
 WebApplication app = builder.Build();
 
 app.Services.GetRequiredService<ITickScheduler>().Start();
+
 app.MapGrpcService<DungeonControllerService>();
 
 app.MapGet("/", () => "Dungeon Game Service is live. Connect via gRPC.");

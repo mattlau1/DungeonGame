@@ -5,6 +5,8 @@ using DungeonServer.Application.Core.Movement.Models;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.External;
+using DungeonServer.Service.CustomMarshallers;
+using Google.Protobuf;
 using Grpc.Core;
 using PlayerInfo = DungeonGame.Core.PlayerInfo;
 using AppPlayerInfo = DungeonServer.Application.Core.Player.Models.PlayerInfo;
@@ -12,8 +14,68 @@ using MovementInput = DungeonServer.Application.Core.Movement.Models.MovementInp
 
 namespace DungeonServer.Service.Services.Core;
 
-public class DungeonControllerService : DungeonController.DungeonControllerBase
+public class DungeonControllerService
 {
+    public static readonly Method<SubscribeRoomRequest, RoomSnapshotMarshaller.SnapshotSource> SubscribeRoomMethod =
+        new(
+            type: MethodType.ServerStreaming,
+            serviceName: "dungeon_game.core.DungeonController",
+            name: nameof(SubscribeRoom),
+            requestMarshaller: Marshallers.Create(
+                r => r.ToByteArray(),
+                data => SubscribeRoomRequest.Parser.ParseFrom(data)),
+            responseMarshaller: RoomSnapshotMarshaller.Marshaller);
+
+    public static readonly Method<RoomInfoRequest, RoomInfo> GetRoomInfoMethod = new(
+        MethodType.Unary,
+        "dungeon_game.core.DungeonController",
+        nameof(GetRoomInfo),
+        Marshallers.Create(r => r.ToByteArray(), data => RoomInfoRequest.Parser.ParseFrom(data)),
+        Marshallers.Create(r => r.ToByteArray(), data => RoomInfo.Parser.ParseFrom(data)));
+
+    public static readonly Method<InputCommandRequest, Google.Protobuf.WellKnownTypes.Empty> SendInputCommandMethod =
+        new(
+            MethodType.DuplexStreaming,
+            "dungeon_game.core.DungeonController",
+            nameof(SendInputCommand),
+            Marshallers.Create(r => r.ToByteArray(), data => InputCommandRequest.Parser.ParseFrom(data)),
+            Marshallers.Create(
+                _ => new Google.Protobuf.WellKnownTypes.Empty().ToByteArray(),
+                data => Google.Protobuf.WellKnownTypes.Empty.Parser.ParseFrom(data)));
+
+    public static readonly Method<SpawnRequest, PlayerInfo> SpawnPlayerMethod = new(
+        MethodType.Unary,
+        "dungeon_game.core.DungeonController",
+        nameof(SpawnPlayer),
+        Marshallers.Create(r => r.ToByteArray(), data => SpawnRequest.Parser.ParseFrom(data)),
+        Marshallers.Create(r => r.ToByteArray(), data => PlayerInfo.Parser.ParseFrom(data)));
+
+    public static readonly Method<PlayerInfoRequest, PlayerInfo> GetPlayerInfoMethod = new(
+        MethodType.Unary,
+        "dungeon_game.core.DungeonController",
+        nameof(GetPlayerInfo),
+        Marshallers.Create(r => r.ToByteArray(), data => PlayerInfoRequest.Parser.ParseFrom(data)),
+        Marshallers.Create(r => r.ToByteArray(), data => PlayerInfo.Parser.ParseFrom(data)));
+
+    public static readonly Method<DisconnectRequest, Google.Protobuf.WellKnownTypes.Empty> DisconnectPlayerMethod = new(
+        MethodType.Unary,
+        "dungeon_game.core.DungeonController",
+        nameof(DisconnectPlayer),
+        Marshallers.Create(r => r.ToByteArray(), data => DisconnectRequest.Parser.ParseFrom(data)),
+        Marshallers.Create(
+            _ => new Google.Protobuf.WellKnownTypes.Empty().ToByteArray(),
+            data => Google.Protobuf.WellKnownTypes.Empty.Parser.ParseFrom(data)));
+
+    public static readonly Method<Google.Protobuf.WellKnownTypes.Empty, ServerStatusResponse> GetServerStatusMethod =
+        new(
+            MethodType.Unary,
+            "dungeon_game.core.DungeonController",
+            nameof(GetServerStatus),
+            Marshallers.Create(
+                _ => new Google.Protobuf.WellKnownTypes.Empty().ToByteArray(),
+                data => Google.Protobuf.WellKnownTypes.Empty.Parser.ParseFrom(data)),
+            Marshallers.Create(r => r.ToByteArray(), data => ServerStatusResponse.Parser.ParseFrom(data)));
+
     private readonly IDungeonController _dungeonController;
 
     public DungeonControllerService(IDungeonController dungeonController)
@@ -21,7 +83,7 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         _dungeonController = dungeonController;
     }
 
-    public override async Task<RoomInfo> GetRoomInfo(RoomInfoRequest request, ServerCallContext context)
+    public async Task<RoomInfo> GetRoomInfo(RoomInfoRequest request, ServerCallContext context)
     {
         RoomStateSnapshot? room = await _dungeonController.GetRoomAsync(request.RoomId, context.CancellationToken);
         if (room == null)
@@ -32,28 +94,29 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         return room.ToProto();
     }
 
-    public override async Task SubscribeRoom(
+    public async Task SubscribeRoom(
         SubscribeRoomRequest request,
-        IServerStreamWriter<RoomSnapshot> responseStream,
+        IServerStreamWriter<RoomSnapshotMarshaller.SnapshotSource> responseStream,
         ServerCallContext context)
     {
         try
         {
-            IAsyncEnumerable<RoomPlayerUpdate> appResponseStream = _dungeonController.SubscribeRoomAsync(
+            IAsyncEnumerable<ReadOnlyMemory<byte>> appResponseStream = _dungeonController.SubscribeRoomAsync(
                 request.PlayerId,
                 request.RoomId,
                 context.CancellationToken);
-
-            await foreach (RoomPlayerUpdate roomUpdate in appResponseStream)
+            
+            await foreach (ReadOnlyMemory<byte> data in appResponseStream)
             {
-                var grpcResponse = new RoomSnapshot { RoomId = roomUpdate.RoomId };
-
-                foreach (PlayerSnapshot player in roomUpdate.Players)
+                if (context.CancellationToken.IsCancellationRequested)
                 {
-                    grpcResponse.Players.Add(player.ToProto());
+                    break;
                 }
 
-                await responseStream.WriteAsync(grpcResponse);
+                var carrier = new RoomSnapshotMarshaller.SnapshotSource();
+                carrier.Update(data);
+
+                await responseStream.WriteAsync(carrier);
             }
         }
         catch (OperationCanceledException)
@@ -76,7 +139,7 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         }
     }
 
-    public override async Task SendInputCommand(
+    public async Task SendInputCommand(
         IAsyncStreamReader<InputCommandRequest> requestStream,
         IServerStreamWriter<Google.Protobuf.WellKnownTypes.Empty> responseStream,
         ServerCallContext context)
@@ -94,11 +157,7 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
                     PlayerId = request.PlayerId,
                     Sequence = request.Sequence,
                     ClientTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                    Input = new MovementInput
-                    {
-                        MoveX = request.InputX,
-                        MoveY = request.InputY
-                    }
+                    Input = new MovementInput { MoveX = request.InputX, MoveY = request.InputY }
                 };
 
                 await _dungeonController.SendInputCommandAsync(inputCommand, context.CancellationToken);
@@ -132,19 +191,19 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         }
     }
 
-    public override async Task<PlayerInfo> SpawnPlayer(SpawnRequest request, ServerCallContext context)
+    public async Task<PlayerInfo> SpawnPlayer(SpawnRequest request, ServerCallContext context)
     {
         AppPlayerInfo result = await _dungeonController.SpawnPlayerAsync(context.CancellationToken);
         return result.ToProto();
     }
 
-    public override async Task<PlayerInfo> GetPlayerInfo(PlayerInfoRequest request, ServerCallContext context)
+    public async Task<PlayerInfo> GetPlayerInfo(PlayerInfoRequest request, ServerCallContext context)
     {
         AppPlayerInfo result = await _dungeonController.GetPlayerInfoAsync(request.PlayerId, context.CancellationToken);
         return result.ToProto();
     }
 
-    public override async Task<Google.Protobuf.WellKnownTypes.Empty> DisconnectPlayer(
+    public async Task<Google.Protobuf.WellKnownTypes.Empty> DisconnectPlayer(
         DisconnectRequest request,
         ServerCallContext context)
     {
@@ -152,7 +211,7 @@ public class DungeonControllerService : DungeonController.DungeonControllerBase
         return new Google.Protobuf.WellKnownTypes.Empty();
     }
 
-    public override async Task<ServerStatusResponse> GetServerStatus(
+    public async Task<ServerStatusResponse> GetServerStatus(
         Google.Protobuf.WellKnownTypes.Empty request,
         ServerCallContext context)
     {

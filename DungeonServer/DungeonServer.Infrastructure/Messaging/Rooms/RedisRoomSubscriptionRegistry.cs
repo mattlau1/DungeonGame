@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
@@ -8,7 +9,6 @@ using DungeonServer.Application.Core.Rooms.Storage;
 using Google.Protobuf;
 using StackExchange.Redis;
 using PlayerInfo = DungeonGame.Core.PlayerInfo;
-using Location = DungeonServer.Application.Core.Shared.Location;
 
 namespace DungeonServer.Infrastructure.Messaging.Rooms;
 
@@ -16,9 +16,9 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 {
     private sealed class RoomChannel
     {
-        public ConcurrentDictionary<Guid, Channel<RoomPlayerUpdate>> SubscriberChannels { get; } = new();
+        public ConcurrentDictionary<Guid, Channel<ReadOnlyMemory<byte>>> SubscriberChannels { get; } = new();
 
-        public RoomPlayerUpdate? CurrentState { get; set; }
+        public byte[]? CurrentState { get; set; }
 
         public SemaphoreSlim LifecycleLock { get; } = new(1, 1);
         public bool IsSubscribedToRedis { get; set; }
@@ -32,7 +32,7 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         _redis = redis;
     }
 
-    public async IAsyncEnumerable<RoomPlayerUpdate> SubscribeAsync(
+    public async IAsyncEnumerable<ReadOnlyMemory<byte>> SubscribeAsync(
         int subscriberPlayerId,
         int roomId,
         [EnumeratorCancellation] CancellationToken ct)
@@ -41,7 +41,7 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
         var connectionId = Guid.NewGuid();
 
-        var subscriberChannel = Channel.CreateBounded<RoomPlayerUpdate>(
+        var subscriberChannel = Channel.CreateBounded<ReadOnlyMemory<byte>>(
             new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
 
         room.SubscriberChannels.TryAdd(connectionId, subscriberChannel);
@@ -71,9 +71,9 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
         try
         {
-            await foreach (RoomPlayerUpdate update in subscriberChannel.Reader.ReadAllAsync(ct))
+            await foreach (ReadOnlyMemory<byte> roomUpdate in subscriberChannel.Reader.ReadAllAsync(ct))
             {
-                yield return update;
+                yield return roomUpdate;
             }
         }
         finally
@@ -99,25 +99,49 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
     private static void HandleRedisMessage(RoomChannel room, RedisValue value)
     {
-        RoomSnapshot proto = RoomSnapshot.Parser.ParseFrom(value);
-        RoomPlayerUpdate update = MapToPlayerUpdate(proto);
+        byte[] stableBytes = (byte[])value!; 
 
-        room.CurrentState = update;
+        room.CurrentState = stableBytes;
 
-        foreach (Channel<RoomPlayerUpdate> channel in room.SubscriberChannels.Values)
+        foreach (var channel in room.SubscriberChannels.Values)
         {
-            channel.Writer.TryWrite(update);
+            channel.Writer.TryWrite(stableBytes);
         }
     }
 
-    public Task PublishUpdateAsync(int roomId, RoomPlayerUpdate update, CancellationToken ct)
+    public async Task PublishUpdateAsync(int roomId, RoomPlayerUpdate roomUpdate, CancellationToken ct)
     {
-        RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
-        room.CurrentState = update;
+        RoomSnapshot protoSnapshot = CreateProtoRoomSnapshot(roomId, roomUpdate);
+    
+        int calculatedSize = protoSnapshot.CalculateSize();
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(calculatedSize);
+    
+        try
+        {
+            protoSnapshot.WriteTo(new Span<byte>(buffer, 0, calculatedSize));
 
+            var persistentState = new byte[calculatedSize];
+            Buffer.BlockCopy(buffer, 0, persistentState, 0, calculatedSize);
+        
+            RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
+            room.CurrentState = persistentState;
+
+            // Await the Redis publish before returning the buffer
+            await _redis.GetSubscriber().PublishAsync(
+                RedisChannel.Literal($"room:{roomId}"), 
+                new ReadOnlyMemory<byte>(buffer, 0, calculatedSize)
+            );
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static RoomSnapshot CreateProtoRoomSnapshot(int roomId, RoomPlayerUpdate roomUpdate)
+    {
         var protoSnapshot = new RoomSnapshot { RoomId = roomId };
-
-        foreach (PlayerSnapshot player in update.Players)
+        foreach (PlayerSnapshot player in roomUpdate.Players)
         {
             protoSnapshot.Players.Add(
                 new PlayerInfo
@@ -127,25 +151,6 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
                 });
         }
 
-        ct.ThrowIfCancellationRequested();
-
-        byte[] data = protoSnapshot.ToByteArray();
-        return _redis.GetSubscriber().PublishAsync(RedisChannel.Literal($"room:{roomId}"), data);
-    }
-
-    private static RoomPlayerUpdate MapToPlayerUpdate(RoomSnapshot proto)
-    {
-        List<PlayerSnapshot> players = proto.Players.Select(p => new PlayerSnapshot(
-                p.Id,
-                proto.RoomId,
-                new Location(p.Location.X, p.Location.Y),
-                true))
-            .ToList();
-
-        return new RoomPlayerUpdate
-        {
-            RoomId = proto.RoomId,
-            Players = players
-        };
+        return protoSnapshot;
     }
 }

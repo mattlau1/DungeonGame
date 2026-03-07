@@ -4,7 +4,5 @@ namespace DungeonServer.Application.Core.Rooms.Models;
 
 public sealed record RoomPlayerUpdate
 {
-    public int RoomId { get; init; }
-
     public IReadOnlyCollection<PlayerSnapshot> Players { get; init; } = [];
 }

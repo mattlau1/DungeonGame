@@ -37,7 +37,6 @@ public class EfRoomStore : IRoomStore
 
         var playerUpdate = new RoomPlayerUpdate
         {
-            RoomId = roomEntity.Id,
             Players = roomEntity.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
         };
         PublishRoomUpdateAsync(roomEntity.Id, playerUpdate, ct);
@@ -78,7 +77,6 @@ public class EfRoomStore : IRoomStore
 
         var playerUpdate = new RoomPlayerUpdate
         {
-            RoomId = roomId,
             Players = room.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
         };
         PublishRoomUpdateAsync(roomId, playerUpdate, ct);
@@ -113,7 +111,6 @@ public class EfRoomStore : IRoomStore
 
         var playerUpdate = new RoomPlayerUpdate
         {
-            RoomId = roomId,
             Players = room.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
         };
         PublishRoomUpdateAsync(roomId, playerUpdate, ct);
@@ -153,7 +150,6 @@ public class EfRoomStore : IRoomStore
 
         var playerUpdate = new RoomPlayerUpdate
         {
-            RoomId = roomId,
             Players = room.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
         };
 
@@ -257,21 +253,11 @@ public class EfRoomStore : IRoomStore
         await context.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
 
-        var playerUpdateFrom = new RoomPlayerUpdate
-        {
-            RoomId = fromRoomId,
-            Players = fromRoom.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
-        };
-        var playerUpdateTo = new RoomPlayerUpdate
-        {
-            RoomId = toRoomId,
-            Players = toRoom.Occupants.Select(o => new PlayerSnapshot(o.Id, o.RoomId, new Location(o.X, o.Y), o.IsOnline)).ToList()
-        };
-        PublishRoomUpdateAsync(fromRoomId, ct);
-        PublishRoomUpdateAsync(toRoomId, ct);
+        await PublishRoomUpdateAsync(fromRoomId, ct);
+        await PublishRoomUpdateAsync(toRoomId, ct);
     }
 
-    public IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(
+    public IAsyncEnumerable<ReadOnlyMemory<byte>> SubscribeRoomAsync(
         int subscriberPlayerId,
         int roomId,
         CancellationToken ct)

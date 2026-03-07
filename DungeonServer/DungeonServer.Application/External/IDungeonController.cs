@@ -12,7 +12,7 @@ public interface IDungeonController
 
     Task SendInputCommandAsync(InputCommand command, CancellationToken ct);
 
-    IAsyncEnumerable<RoomPlayerUpdate> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct);
+    IAsyncEnumerable<ReadOnlyMemory<byte>> SubscribeRoomAsync(int playerId, int roomId, CancellationToken ct);
 
     Task DisconnectPlayerAsync(int playerId, CancellationToken ct);
 
