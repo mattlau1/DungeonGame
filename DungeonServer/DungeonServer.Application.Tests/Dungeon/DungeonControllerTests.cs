@@ -213,7 +213,7 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+            await deps.RoomStore.PublishRoomUpdateAsync(roomId, CancellationToken.None);
 
             await Task.Delay(100);
 
@@ -269,7 +269,7 @@ public static class DungeonControllerTests
             });
 
             await Task.Delay(100);
-            await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+            await deps.RoomStore.PublishRoomUpdateAsync(roomId, CancellationToken.None);
 
             await Task.Delay(100);
 
@@ -287,12 +287,11 @@ public static class DungeonControllerTests
             await Task.Delay(100);
             var snapshot1 = new RoomPlayerUpdate
             {
-                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
+                RoomId = roomId, Players = new List<PlayerSnapshot>()
             };
             await deps.Registry.PublishUpdateAsync(
                 roomId,
                 snapshot1,
-                RoomUpdateContext.Broadcast(),
                 CancellationToken.None);
 
             await Task.Delay(100);
@@ -320,9 +319,9 @@ public static class DungeonControllerTests
             await Task.Delay(100);
             var snapshot2 = new RoomPlayerUpdate
             {
-                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
+                RoomId = roomId, Players = new List<PlayerSnapshot>()
             };
-            await deps.Registry.PublishUpdateAsync(roomId, snapshot2, RoomUpdateContext.Broadcast(), cts.Token);
+            await deps.Registry.PublishUpdateAsync(roomId, snapshot2, cts.Token);
 
             await Task.Delay(50);
             await cts.CancelAsync();
@@ -330,9 +329,9 @@ public static class DungeonControllerTests
             await Task.Delay(100);
             var snapshot3 = new RoomPlayerUpdate
             {
-                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = null
+                RoomId = roomId, Players = new List<PlayerSnapshot>()
             };
-            await deps.Registry.PublishUpdateAsync(roomId, snapshot3, RoomUpdateContext.Broadcast(), cts.Token);
+            await deps.Registry.PublishUpdateAsync(roomId, snapshot3, cts.Token);
 
             await Task.Delay(100);
             await subscriptionTask;
@@ -369,55 +368,6 @@ public static class DungeonControllerTests
             await subscriptionTask;
 
             Assert.Empty(snapshots);
-        }
-
-        [Fact]
-        public async Task ReceivesInitialSnapshotEvenIfLastUpdateExcludedThem()
-        {
-            TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
-            PlayerInfo player = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-            int roomId = player.RoomId;
-
-            await Task.Delay(100);
-            var excludedSnapshot = new RoomPlayerUpdate
-            {
-                RoomId = roomId, Players = new List<PlayerSnapshot>(), ExcludePlayerId = player.Id
-            };
-            await deps.Registry.PublishUpdateAsync(
-                roomId,
-                excludedSnapshot,
-                RoomUpdateContext.ExcludePlayer(player.Id),
-                CancellationToken.None);
-
-            await Task.Delay(100);
-
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-            var snapshots = new List<RoomPlayerUpdate>();
-
-            Task task = Task.Run(async () =>
-            {
-                try
-                {
-                    await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
-                                       player.Id,
-                                       roomId,
-                                       cts.Token))
-                    {
-                        snapshots.Add(snap);
-                        break; // Only need the initial snapshot
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                }
-            });
-
-            await task;
-
-            // Player should receive the initial room state snapshot even if the last update excluded them.
-            // Exclusion prevents self-notification, but doesn't hide current room state from new subscribers.
-            Assert.Single(snapshots);
-            Assert.Equal(roomId, snapshots[0].RoomId);
         }
     }
 

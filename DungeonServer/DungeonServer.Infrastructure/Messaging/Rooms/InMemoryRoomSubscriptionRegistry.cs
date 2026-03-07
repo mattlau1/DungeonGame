@@ -8,11 +8,9 @@ namespace DungeonServer.Infrastructure.Messaging.Rooms;
 
 public sealed class InMemoryRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 {
-    private sealed record RoomUpdate(RoomPlayerUpdate Update, RoomUpdateContext Context);
-
     private sealed class RoomChannel
     {
-        public ConcurrentDictionary<Guid, (Channel<RoomUpdate> Channel, int PlayerId)> SubscriberChannels { get; } = new();
+        public ConcurrentDictionary<Guid, Channel<RoomPlayerUpdate>> SubscriberChannels { get; } = new();
 
         public RoomPlayerUpdate? CurrentState { get; set; }
     }
@@ -32,24 +30,21 @@ public sealed class InMemoryRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
         Guid connectionId = Guid.NewGuid();
 
-        var subscriberChannel = Channel.CreateBounded<RoomUpdate>(
+        var subscriberChannel = Channel.CreateBounded<RoomPlayerUpdate>(
             new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
 
-        room.SubscriberChannels.TryAdd(connectionId, (subscriberChannel, subscriberPlayerId));
+        room.SubscriberChannels.TryAdd(connectionId, subscriberChannel);
 
         if (room.CurrentState != null)
         {
-            subscriberChannel.Writer.TryWrite(new RoomUpdate(room.CurrentState, RoomUpdateContext.Broadcast()));
+            subscriberChannel.Writer.TryWrite(room.CurrentState);
         }
 
         try
         {
-            await foreach (RoomUpdate update in subscriberChannel.Reader.ReadAllAsync(ct))
+            await foreach (RoomPlayerUpdate update in subscriberChannel.Reader.ReadAllAsync(ct))
             {
-                if (update.Context.ExcludePlayerId != subscriberPlayerId)
-                {
-                    yield return update.Update;
-                }
+                yield return update;
             }
         }
         finally
@@ -62,7 +57,7 @@ public sealed class InMemoryRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         }
     }
 
-    public Task PublishUpdateAsync(int roomId, RoomPlayerUpdate update, RoomUpdateContext context, CancellationToken ct)
+    public Task PublishUpdateAsync(int roomId, RoomPlayerUpdate update, CancellationToken ct)
     {
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
         room.CurrentState = update;
@@ -72,11 +67,9 @@ public sealed class InMemoryRoomSubscriptionRegistry : IRoomSubscriptionRegistry
             return Task.CompletedTask;
         }
 
-        var roomUpdate = new RoomUpdate(update, context);
-
-        foreach (var subscriber in room.SubscriberChannels.Values)
+        foreach (Channel<RoomPlayerUpdate> channel in room.SubscriberChannels.Values)
         {
-            subscriber.Channel.Writer.TryWrite(roomUpdate);
+            channel.Writer.TryWrite(update);
         }
 
         return Task.CompletedTask;

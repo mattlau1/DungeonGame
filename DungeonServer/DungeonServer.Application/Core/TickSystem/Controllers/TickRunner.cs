@@ -83,7 +83,6 @@ public class TickRunner : ITickScheduler
                 await _subscriptionRegistry.PublishUpdateAsync(
                     roomId,
                     snapshot,
-                    RoomUpdateContext.Broadcast(),
                     CancellationToken.None);
             }
 

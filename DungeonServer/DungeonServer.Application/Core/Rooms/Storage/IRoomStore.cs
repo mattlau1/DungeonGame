@@ -12,7 +12,7 @@ public interface IRoomStore
 
     Task<RoomStateSnapshot?> GetRoomAsync(int roomId, CancellationToken ct);
 
-    Task PublishRoomUpdateAsync(int roomId, RoomUpdateContext context, CancellationToken ct);
+    Task PublishRoomUpdateAsync(int roomId, CancellationToken ct);
 
     Task LinkRoomsAsync(int roomIdA, int roomIdB, Direction directionFromAToB, CancellationToken ct);
 

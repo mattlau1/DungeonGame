@@ -6,5 +6,5 @@ public interface IRoomSubscriptionRegistry
 {
     IAsyncEnumerable<RoomPlayerUpdate> SubscribeAsync(int subscriberPlayerId, int roomId, CancellationToken ct);
 
-    Task PublishUpdateAsync(int roomId, RoomPlayerUpdate update, RoomUpdateContext context, CancellationToken ct);
+    Task PublishUpdateAsync(int roomId, RoomPlayerUpdate update, CancellationToken ct);
 }

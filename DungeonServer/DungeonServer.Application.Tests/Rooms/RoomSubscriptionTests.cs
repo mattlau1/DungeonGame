@@ -164,7 +164,7 @@ public class RoomSubscriptionTests
 
         await Task.Delay(100);
 
-        await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await deps.RoomStore.PublishRoomUpdateAsync(roomId, CancellationToken.None);
 
         await Task.Delay(200);
         await cts.CancelAsync();
@@ -185,7 +185,7 @@ public class RoomSubscriptionTests
 
         await Task.Delay(100);
 
-        await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await deps.RoomStore.PublishRoomUpdateAsync(roomId, CancellationToken.None);
 
         await Task.Delay(100);
 
@@ -211,65 +211,18 @@ public class RoomSubscriptionTests
 
         await Task.Delay(100);
 
-        await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await deps.RoomStore.PublishRoomUpdateAsync(roomId, CancellationToken.None);
 
         await Task.Delay(50);
         await cts.CancelAsync();
 
         await Task.Delay(100);
 
-        await deps.RoomStore.PublishRoomUpdateAsync(roomId, RoomUpdateContext.Broadcast(), CancellationToken.None);
+        await deps.RoomStore.PublishRoomUpdateAsync(roomId, CancellationToken.None);
 
         await Task.Delay(100);
         await task;
 
         Assert.True(snapshots.Count > 0);
-    }
-
-    [Fact]
-    public async Task SubscribeRoomAsync_ReceivesInitialSnapshotEvenIfLastUpdateExcludedThem()
-    {
-        TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
-
-        PlayerInfo player1 = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-        int roomId = player1.RoomId;
-
-        await Task.Delay(100);
-
-        // Publish an update that excludes this player (simulating they triggered it)
-        await deps.RoomStore.PublishRoomUpdateAsync(
-            roomId,
-            RoomUpdateContext.ExcludePlayer(player1.Id),
-            CancellationToken.None);
-
-        await Task.Delay(100);
-
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var snapshots = new List<RoomPlayerUpdate>();
-
-        Task task = Task.Run(async () =>
-        {
-            try
-            {
-                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
-                                   player1.Id,
-                                   roomId,
-                                   cts.Token))
-                {
-                    snapshots.Add(snap);
-                    break; // Only need the initial snapshot
-                }
-            }
-            catch (OperationCanceledException)
-            {
-            }
-        });
-
-        await task;
-
-        // Player should receive the initial room state snapshot even if the last update excluded them.
-        // Exclusion is for preventing self-notification, not hiding data from players.
-        Assert.Single(snapshots);
-        Assert.Equal(roomId, snapshots[0].RoomId);
     }
 }

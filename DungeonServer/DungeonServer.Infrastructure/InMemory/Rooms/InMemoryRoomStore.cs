@@ -55,7 +55,7 @@ public class InMemoryRoomStore : IRoomStore
             RoomId = roomId,
             Players = entry.RoomState.Players.ToList()
         };
-        await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, RoomUpdateContext.Broadcast(), ct);
+        await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, ct);
 
         return snapshot;
     }
@@ -91,7 +91,7 @@ public class InMemoryRoomStore : IRoomStore
                 RoomId = roomId,
                 Players = snapshot.Players
             };
-            await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, RoomUpdateContext.Broadcast(), ct);
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, ct);
 
             return snapshot;
         }
@@ -125,7 +125,7 @@ public class InMemoryRoomStore : IRoomStore
                 RoomId = roomId,
                 Players = snapshot.Players
             };
-            await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, RoomUpdateContext.Broadcast(), ct);
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, ct);
             return snapshot;
         }
         finally
@@ -157,7 +157,7 @@ public class InMemoryRoomStore : IRoomStore
     /// <summary>
     /// Tell subscribers that an update has occurred within the given room.
     /// </summary>
-    public async Task PublishRoomUpdateAsync(int roomId, RoomUpdateContext context, CancellationToken ct)
+    public async Task PublishRoomUpdateAsync(int roomId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
@@ -174,7 +174,7 @@ public class InMemoryRoomStore : IRoomStore
                 RoomId = roomId,
                 Players = room.RoomState.Players.ToList()
             };
-            await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, context, ct);
+            await _subscriptionRegistry.PublishUpdateAsync(roomId, playerUpdate, ct);
         }
         finally
         {
@@ -279,8 +279,8 @@ public class InMemoryRoomStore : IRoomStore
                     RoomId = roomIdB,
                     Players = roomB.RoomState.Players.ToList()
                 };
-                await _subscriptionRegistry.PublishUpdateAsync(roomIdA, playerUpdateA, RoomUpdateContext.Broadcast(), ct);
-                await _subscriptionRegistry.PublishUpdateAsync(roomIdB, playerUpdateB, RoomUpdateContext.Broadcast(), ct);
+                await _subscriptionRegistry.PublishUpdateAsync(roomIdA, playerUpdateA, ct);
+                await _subscriptionRegistry.PublishUpdateAsync(roomIdB, playerUpdateB, ct);
             }
             finally
             {
