@@ -1,6 +1,6 @@
 namespace DungeonServer.Application.Core.Movement.Models;
 
-public record MovementInput
+public record struct MovementInput
 {
     public float MoveX { get; init; } // -1 to +1 (left/right)                      
     public float MoveY { get; init; } // -1 to +1 (forward/backward)                

@@ -1,6 +1,6 @@
 namespace DungeonServer.Application.Core.Shared;
 
-public sealed record Location(float X, float Y)
+public readonly record struct Location(float X, float Y)
 {
     public static Location Origin => new(0, 0);
 

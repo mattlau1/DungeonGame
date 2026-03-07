@@ -2,7 +2,7 @@ using DungeonServer.Application.Core.Shared;
 
 namespace DungeonServer.Application.Core.Player.Models;
 
-public record PlayerInfo
+public record struct PlayerInfo
 {
     public int Id;
     public int RoomId;

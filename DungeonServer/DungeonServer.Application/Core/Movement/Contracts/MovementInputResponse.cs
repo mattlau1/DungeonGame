@@ -3,4 +3,4 @@ using DungeonServer.Application.Core.Shared;
 
 namespace DungeonServer.Application.Core.Movement.Contracts;
 
-public record MovementInputResponse(MovementRequestStatus Status, Location Location, int RoomId);
+public record struct MovementInputResponse(MovementRequestStatus Status, Location Location, int RoomId);

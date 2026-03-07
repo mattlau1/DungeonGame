@@ -11,11 +11,8 @@ public class PlayerSpawningTests
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
         PlayerInfo result = await deps.PlayerManager.SpawnPlayerAsync(CancellationToken.None);
-
-        Assert.NotNull(result);
         Assert.True(result.Id > 0);
         Assert.True(result.RoomId > 0);
-        Assert.NotNull(result.Location);
     }
 
     [Fact]
@@ -149,11 +146,8 @@ public class PlayerSpawningTests
     {
         TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
         PlayerInfo result = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-
-        Assert.NotNull(result);
         Assert.True(result.Id > 0);
         Assert.True(result.RoomId > 0);
-        Assert.NotNull(result.Location);
 
         PlayerSnapshot? player = await deps.PlayerStore.GetPlayerAsync(result.Id, CancellationToken.None);
         Assert.NotNull(player);

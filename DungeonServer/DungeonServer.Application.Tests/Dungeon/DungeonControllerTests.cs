@@ -15,11 +15,8 @@ public static class DungeonControllerTests
         {
             TestHelpers.ControllerDependencies deps = TestHelpers.CreateControllerDependencies();
             PlayerInfo result = await deps.Controller.SpawnPlayerAsync(CancellationToken.None);
-
-            Assert.NotNull(result);
             Assert.True(result.Id > 0);
             Assert.True(result.RoomId > 0);
-            Assert.NotNull(result.Location);
         }
 
         [Fact]
@@ -141,8 +138,6 @@ public static class DungeonControllerTests
             PlayerInfo info = await deps.Controller.GetPlayerInfoAsync(
                 spawned.Id,
                 CancellationToken.None);
-
-            Assert.NotNull(info);
             Assert.Equal(spawned.Id, info.Id);
             Assert.Equal(spawned.RoomId, info.RoomId);
             Assert.Equal(spawned.Location.X, info.Location.X);

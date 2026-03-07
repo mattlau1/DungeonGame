@@ -10,13 +10,12 @@ public class InMemoryPlayerStore : IPlayerStore
 {
     private sealed class LockablePlayerState
     {
-        public PlayerInfo PlayerInfo { get; }
+        public PlayerInfo PlayerInfo { get; set; }
         public SemaphoreSlim Gate { get; } = new(initialCount: 1, maxCount: 1);
 
-        public LockablePlayerState(int playerId, PlayerInfo info)
+        public LockablePlayerState(PlayerInfo info)
         {
             PlayerInfo = info;
-            PlayerInfo.Id = playerId;
         }
     }
 
@@ -30,7 +29,7 @@ public class InMemoryPlayerStore : IPlayerStore
 
         int playerId = Interlocked.Increment(ref _nextPlayerId);
         var info = new PlayerInfo { Id = playerId, RoomId = RoomConstants.InvalidRoomId, Location = initialLocation, IsOnline = true };
-        var entry = new LockablePlayerState(playerId, info);
+        var entry = new LockablePlayerState(info);
 
         if (!_players.TryAdd(playerId, entry))
         {
@@ -56,8 +55,10 @@ public class InMemoryPlayerStore : IPlayerStore
         await player.Gate.WaitAsync(ct);
         try
         {
-            player.PlayerInfo.Location = location;
-            player.PlayerInfo.RoomId = roomId;
+            PlayerInfo info = player.PlayerInfo;
+            info.Location = location;
+            info.RoomId = roomId;
+            player.PlayerInfo = info;
             return PlayerSnapshot.From(player.PlayerInfo);
         }
         finally

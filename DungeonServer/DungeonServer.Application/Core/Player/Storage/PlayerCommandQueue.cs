@@ -13,7 +13,7 @@ public class PlayerCommandQueue
     public List<InputCommand> DequeueAll()
     {
         var results = new List<InputCommand>();
-        while (_commands.Reader.TryRead(out InputCommand? cmd))
+        while (_commands.Reader.TryRead(out InputCommand cmd))
         {
             results.Add(cmd);
         }

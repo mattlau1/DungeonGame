@@ -34,9 +34,9 @@ public class PlayerManager : IPlayerManager
     public async Task<PlayerInfo> SpawnPlayerAsync(CancellationToken ct)
     {
         PlayerInfo? existingJoin = await TryJoinExistingRoomAsync(ct);
-        if (existingJoin is not null)
+        if (existingJoin.HasValue)
         {
-            return existingJoin;
+            return existingJoin.Value;
         }
 
         return await SpawnPlayerInNewRoom(ct);
