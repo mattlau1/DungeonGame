@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using DungeonGame.Core;
@@ -16,11 +17,14 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 {
     private sealed class RoomChannel
     {
-        public ConcurrentDictionary<Guid, Channel<ReadOnlyMemory<byte>>> SubscriberChannels { get; } = new();
+        // Field for volatile access - enables lock-free thread-safe reads/writes
+        public ImmutableList<ChannelWriter<ReadOnlyMemory<byte>>> Subscriptions =
+            ImmutableList<ChannelWriter<ReadOnlyMemory<byte>>>.Empty;
 
-        public byte[]? CurrentState { get; set; }
+        // Field for volatile access - enables lock-free thread-safe reads/writes
+        public byte[]? CurrentState;
 
-        public SemaphoreSlim LifecycleLock { get; } = new(1, 1);
+        public Lock Gate { get; } = new();
         public bool IsSubscribedToRedis { get; set; }
     }
 
@@ -39,34 +43,31 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
     {
         RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
 
-        var connectionId = Guid.NewGuid();
-
         var subscriberChannel = Channel.CreateBounded<ReadOnlyMemory<byte>>(
             new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest });
 
-        room.SubscriberChannels.TryAdd(connectionId, subscriberChannel);
-
-        if (room.CurrentState != null)
+        bool needsSubscribe;
+        lock (room.Gate)
         {
-            subscriberChannel.Writer.TryWrite(room.CurrentState);
-        }
+            room.Subscriptions = room.Subscriptions.Add(subscriberChannel.Writer);
 
-        await room.LifecycleLock.WaitAsync(ct);
-        try
-        {
-            if (!room.IsSubscribedToRedis)
+            byte[]? currentState = Volatile.Read(ref room.CurrentState);
+            if (currentState != null)
             {
-                await _redis.GetSubscriber()
-                    .SubscribeAsync(
-                        RedisChannel.Literal($"room:{roomId}"),
-                        (_, value) => HandleRedisMessage(room, value));
+                subscriberChannel.Writer.TryWrite(currentState);
+            }
 
+            needsSubscribe = !room.IsSubscribedToRedis;
+            if (needsSubscribe)
+            {
                 room.IsSubscribedToRedis = true;
             }
         }
-        finally
+
+        if (needsSubscribe)
         {
-            room.LifecycleLock.Release();
+            _redis.GetSubscriber()
+                .Subscribe(RedisChannel.Literal($"room:{roomId}"), (_, value) => HandleRedisMessage(room, value));
         }
 
         try
@@ -78,63 +79,83 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
         }
         finally
         {
-            room.SubscriberChannels.TryRemove(connectionId, out _);
-
-            await room.LifecycleLock.WaitAsync(CancellationToken.None);
-            try
+            bool needsUnsubscribe;
+            lock (room.Gate)
             {
-                if (room.SubscriberChannels.IsEmpty && room.IsSubscribedToRedis)
+                room.Subscriptions = room.Subscriptions.Remove(subscriberChannel.Writer);
+
+                needsUnsubscribe = room.Subscriptions.IsEmpty && room.IsSubscribedToRedis;
+                if (needsUnsubscribe)
                 {
-                    await _redis.GetSubscriber().UnsubscribeAsync(RedisChannel.Literal($"room:{roomId}"));
                     room.IsSubscribedToRedis = false;
                     _rooms.TryRemove(roomId, out _);
                 }
             }
-            finally
+
+            if (needsUnsubscribe)
             {
-                room.LifecycleLock.Release();
+                _redis.GetSubscriber().Unsubscribe(RedisChannel.Literal($"room:{roomId}"));
             }
         }
     }
 
     private static void HandleRedisMessage(RoomChannel room, RedisValue value)
     {
-        byte[] stableBytes = (byte[])value!; 
+        var temp = (byte[])value!;
+        var stableBytes = new byte[temp.Length];
+        Array.Copy(temp, stableBytes, temp.Length);
 
-        room.CurrentState = stableBytes;
+        // Volatile read ensures visibility across CPU cores
+        ImmutableList<ChannelWriter<ReadOnlyMemory<byte>>> subs = Volatile.Read(ref room.Subscriptions);
 
-        foreach (var channel in room.SubscriberChannels.Values)
+        // Lock-free write - ensures visibility across threads
+        Volatile.Write(ref room.CurrentState, stableBytes);
+
+        foreach (ChannelWriter<ReadOnlyMemory<byte>> writer in subs)
         {
-            channel.Writer.TryWrite(stableBytes);
+            writer.TryWrite(stableBytes);
         }
     }
 
-    public async Task PublishUpdateAsync(int roomId, RoomPlayerUpdate roomUpdate, CancellationToken ct)
+    public Task PublishUpdateAsync(int roomId, RoomPlayerUpdate roomUpdate, CancellationToken ct)
     {
         RoomSnapshot protoSnapshot = CreateProtoRoomSnapshot(roomId, roomUpdate);
-    
         int calculatedSize = protoSnapshot.CalculateSize();
         byte[] buffer = ArrayPool<byte>.Shared.Rent(calculatedSize);
-    
+
         try
         {
             protoSnapshot.WriteTo(new Span<byte>(buffer, 0, calculatedSize));
 
+            // Create persistent state for new joiners
             var persistentState = new byte[calculatedSize];
             Buffer.BlockCopy(buffer, 0, persistentState, 0, calculatedSize);
-        
-            RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
-            room.CurrentState = persistentState;
 
-            // Await the Redis publish before returning the buffer
-            await _redis.GetSubscriber().PublishAsync(
-                RedisChannel.Literal($"room:{roomId}"), 
-                new ReadOnlyMemory<byte>(buffer, 0, calculatedSize)
-            );
+            RoomChannel room = _rooms.GetOrAdd(roomId, _ => new RoomChannel());
+
+            // Lock-free write - ensures visibility across threads
+            Volatile.Write(ref room.CurrentState, persistentState);
+
+            // Non-blocking background publish
+            // ReSharper disable once InconsistentlySynchronizedField
+            Task<long> publishTask = _redis.GetSubscriber()
+                .PublishAsync(
+                    RedisChannel.Literal($"room:{roomId}"),
+                    new ReadOnlyMemory<byte>(buffer, 0, calculatedSize));
+
+            // Return buffer to pool ONLY after Redis is done, but don't wait for it here
+            _ = publishTask.ContinueWith(
+                t => ArrayPool<byte>.Shared.Return(buffer),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+
+            return Task.CompletedTask;
         }
-        finally
+        catch
         {
             ArrayPool<byte>.Shared.Return(buffer);
+            throw;
         }
     }
 

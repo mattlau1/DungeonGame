@@ -301,6 +301,39 @@ public class InMemoryRedisConnection
             })
             .Returns(Task.CompletedTask);
 
+        // Sync versions (used by lock-based implementation)
+        MockSubscriber
+            .Setup(s => s.Subscribe(
+                It.IsAny<RedisChannel>(),
+                It.IsAny<Action<RedisChannel, RedisValue>>(),
+                It.IsAny<CommandFlags>()))
+            .Callback<RedisChannel, Action<RedisChannel, RedisValue>, CommandFlags>((channel, handler, flags) =>
+            {
+                var channelName = channel.ToString();
+                var handlers = _channels.GetOrAdd(channelName, _ => new List<Action<RedisChannel, RedisValue>>());
+                lock (handlers)
+                {
+                    handlers.Add(handler);
+                }
+            });
+
+        MockSubscriber
+            .Setup(s => s.Unsubscribe(
+                It.IsAny<RedisChannel>(),
+                It.IsAny<Action<RedisChannel, RedisValue>>(),
+                It.IsAny<CommandFlags>()))
+            .Callback<RedisChannel, Action<RedisChannel, RedisValue>, CommandFlags>((channel, handler, flags) =>
+            {
+                var channelName = channel.ToString();
+                if (_channels.TryGetValue(channelName, out var handlers))
+                {
+                    lock (handlers)
+                    {
+                        handlers.Remove(handler);
+                    }
+                }
+            });
+
         MockSubscriber
             .Setup(s => s.PublishAsync(It.IsAny<RedisChannel>(), It.IsAny<RedisValue>(), It.IsAny<CommandFlags>()))
             .Callback<RedisChannel, RedisValue, CommandFlags>((channel, value, flags) =>
@@ -327,6 +360,35 @@ public class InMemoryRedisConnection
                 }
             })
             .Returns(Task.FromResult(0L));
+
+        MockSubscriber
+            .Setup(s => s.Publish(
+                It.IsAny<RedisChannel>(),
+                It.IsAny<RedisValue>(),
+                It.IsAny<CommandFlags>()))
+            .Callback<RedisChannel, RedisValue, CommandFlags>((channel, value, flags) =>
+            {
+                var channelName = channel.ToString();
+                PublishCount++;
+
+                if (_channels.TryGetValue(channelName, out var handlers))
+                {
+                    List<Action<RedisChannel, RedisValue>> handlersCopy;
+                    lock (handlers)
+                    {
+                        handlersCopy = new List<Action<RedisChannel, RedisValue>>(handlers);
+                    }
+
+                    Task.Run(() =>
+                    {
+                        foreach (var handler in handlersCopy)
+                        {
+                            handler(channel, value);
+                        }
+                    });
+                }
+            })
+            .Returns(0L);
 
         MockConnection = new Mock<IConnectionMultiplexer>(MockBehavior.Loose);
         MockConnection.Setup(c => c.GetSubscriber(It.IsAny<RedisValue>())).Returns(MockSubscriber.Object);
