@@ -9,6 +9,7 @@ namespace DungeonServer.Application.Core.Movement.Controllers;
 public class PlayerStateManager
 {
     private readonly ConcurrentDictionary<int, PlayerState> _playerStates = new();
+    private readonly ConcurrentDictionary<int, ConcurrentDictionary<int, PlayerState>> _playersByRoom = new();
     private readonly IPlayerStore _playerStore;
 
     public PlayerStateManager(IPlayerStore playerStore)
@@ -30,16 +31,34 @@ public class PlayerStateManager
         };
 
         _playerStates.TryAdd(playerId, state);
+
+        ConcurrentDictionary<int, PlayerState> roomPlayers = _playersByRoom.GetOrAdd(
+            roomId,
+            _ => new ConcurrentDictionary<int, PlayerState>());
+        roomPlayers.TryAdd(playerId, state);
     }
 
     public void RemovePlayerFromRoom(int playerId)
     {
-        _playerStates.TryRemove(playerId, out _);
+        if (!_playerStates.TryRemove(playerId, out PlayerState? state))
+        {
+            return;
+        }
+
+        if (_playersByRoom.TryGetValue(state.RoomId, out ConcurrentDictionary<int, PlayerState>? roomPlayers))
+        {
+            roomPlayers.TryRemove(playerId, out _);
+        }
     }
 
     public List<PlayerState> GetPlayersInRoom(int roomId)
     {
-        return _playerStates.Values.Where(p => p.RoomId == roomId).ToList();
+        if (_playersByRoom.TryGetValue(roomId, out ConcurrentDictionary<int, PlayerState>? roomPlayers))
+        {
+            return roomPlayers.Values.ToList();
+        }
+
+        return [];
     }
 
     public PlayerState? GetPlayerState(int playerId)
@@ -50,7 +69,7 @@ public class PlayerStateManager
 
     public IEnumerable<int> GetActiveRoomIds()
     {
-        return _playerStates.Values.Select(p => p.RoomId).Distinct();
+        return _playersByRoom.Keys;
     }
 
     public void UpdatePosition(int playerId, Location newPosition)
