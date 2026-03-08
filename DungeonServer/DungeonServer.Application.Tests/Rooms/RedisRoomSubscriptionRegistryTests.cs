@@ -3,11 +3,13 @@ using System.Net;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Shared;
+using DungeonServer.Application.Tests;
 using DungeonServer.Infrastructure.InMemory.Player;
 using DungeonServer.Infrastructure.Messaging.Rooms;
 using Moq;
 using StackExchange.Redis;
 using Xunit;
+using RoomSnapshot = DungeonGame.Core.RoomSnapshot;
 
 namespace DungeonServer.Application.Tests.Rooms;
 
@@ -40,7 +42,7 @@ public class RedisRoomSubscriptionRegistryTests
         {
             try
             {
-                await foreach (RoomPlayerUpdate _ in registry.SubscribeAsync(player.PlayerId, 1, cts.Token))
+                await foreach (ReadOnlyMemory<byte> _ in registry.SubscribeAsync(player.PlayerId, 1, cts.Token))
                 {
                     break;
                 }
@@ -68,15 +70,15 @@ public class RedisRoomSubscriptionRegistryTests
         // Start subscription first so room is tracked in _rooms
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
-        var snapshots = new List<RoomPlayerUpdate>();
+        var snapshots = new List<RoomSnapshot>();
 
         Task enumerateTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(player.PlayerId, roomId, cts.Token))
+                await foreach (ReadOnlyMemory<byte> bytes in registry.SubscribeAsync(player.PlayerId, roomId, cts.Token))
                 {
-                    snapshots.Add(snap);
+                    snapshots.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                     if (snapshots.Count >= 1) break;
                 }
             }
@@ -92,7 +94,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         var update = new RoomPlayerUpdate
         {
-            RoomId = roomId, Players = new List<PlayerSnapshot> { player1, player2 }
+            Players = new List<PlayerSnapshot> { player1, player2 }
         };
 
         await registry.PublishUpdateAsync(roomId, update, CancellationToken.None);
@@ -110,7 +112,7 @@ public class RedisRoomSubscriptionRegistryTests
         {
             await enumerateTask;
             bool foundCombined = snapshots.Any(s =>
-                s.Players.Any(p => p.PlayerId == 1) && s.Players.Any(p => p.PlayerId == 2));
+                s.Players.Any(p => p.Id == 1) && s.Players.Any(p => p.Id == 2));
             Assert.True(foundCombined, "Did not observe a snapshot including both players after the second joined");
         }
     }
@@ -126,14 +128,14 @@ public class RedisRoomSubscriptionRegistryTests
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
-        var snapshots1 = new List<RoomPlayerUpdate>();
+        var snapshots1 = new List<RoomSnapshot>();
         Task task1 = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(player1.PlayerId, roomId, cts.Token))
+                await foreach (ReadOnlyMemory<byte> bytes in registry.SubscribeAsync(player1.PlayerId, roomId, cts.Token))
                 {
-                    snapshots1.Add(snap);
+                    snapshots1.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                     if (snapshots1.Count >= 1) break;
                 }
             }
@@ -142,14 +144,14 @@ public class RedisRoomSubscriptionRegistryTests
             }
         });
 
-        var snapshots2 = new List<RoomPlayerUpdate>();
+        var snapshots2 = new List<RoomSnapshot>();
         Task task2 = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(player2.PlayerId, roomId, cts.Token))
+                await foreach (ReadOnlyMemory<byte> bytes in registry.SubscribeAsync(player2.PlayerId, roomId, cts.Token))
                 {
-                    snapshots2.Add(snap);
+                    snapshots2.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                     if (snapshots2.Count >= 1) break;
                 }
             }
@@ -162,7 +164,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         var update = new RoomPlayerUpdate
         {
-            RoomId = roomId, Players = new List<PlayerSnapshot>()
+            Players = new List<PlayerSnapshot>()
         };
         await registry.PublishUpdateAsync(roomId, update, CancellationToken.None);
 
@@ -187,7 +189,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         var initialUpdate = new RoomPlayerUpdate
         {
-            RoomId = roomId, Players = new List<PlayerSnapshot>()
+            Players = new List<PlayerSnapshot>()
         };
         await registry.PublishUpdateAsync(roomId, initialUpdate, CancellationToken.None);
 
@@ -195,14 +197,14 @@ public class RedisRoomSubscriptionRegistryTests
 
         using var cts = new CancellationTokenSource();
 
-        var snapshots = new List<RoomPlayerUpdate>();
+        var snapshots = new List<RoomSnapshot>();
         Task task = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in registry.SubscribeAsync(player.PlayerId, roomId, cts.Token))
+                await foreach (ReadOnlyMemory<byte> bytes in registry.SubscribeAsync(player.PlayerId, roomId, cts.Token))
                 {
-                    snapshots.Add(snap);
+                    snapshots.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                 }
             }
             catch (OperationCanceledException)
@@ -214,7 +216,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         var update1 = new RoomPlayerUpdate
         {
-            RoomId = roomId, Players = new List<PlayerSnapshot>()
+            Players = new List<PlayerSnapshot>()
         };
         await registry.PublishUpdateAsync(roomId, update1, CancellationToken.None);
 
@@ -225,7 +227,7 @@ public class RedisRoomSubscriptionRegistryTests
 
         var update2 = new RoomPlayerUpdate
         {
-            RoomId = roomId, Players = new List<PlayerSnapshot>()
+            Players = new List<PlayerSnapshot>()
         };
         await registry.PublishUpdateAsync(roomId, update2, CancellationToken.None);
 
@@ -243,7 +245,6 @@ public class RedisRoomSubscriptionRegistryTests
 
         var update = new RoomPlayerUpdate
         {
-            RoomId = roomId,
             Players = new List<PlayerSnapshot> { new PlayerSnapshot(1, roomId, new Location(1, 1), true) }
         };
 

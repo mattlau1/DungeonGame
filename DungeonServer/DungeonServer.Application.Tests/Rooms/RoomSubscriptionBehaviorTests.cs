@@ -1,6 +1,8 @@
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Shared;
+using DungeonServer.Application.Tests;
 using Xunit;
+using RoomSnapshot = DungeonGame.Core.RoomSnapshot;
 
 namespace DungeonServer.Application.Tests.Rooms;
 
@@ -14,18 +16,18 @@ public class RoomSubscriptionBehaviorTests
         var player = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-        var snapshots = new List<RoomPlayerUpdate>();
+        var snapshots = new List<RoomSnapshot>();
 
         Task task = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (ReadOnlyMemory<byte> bytes in deps.RoomStore.SubscribeRoomAsync(
                                    player.PlayerId,
                                    999,
                                    cts.Token))
                 {
-                    snapshots.Add(snapshot);
+                    snapshots.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                 }
             }
             catch (OperationCanceledException)
@@ -54,19 +56,19 @@ public class RoomSubscriptionBehaviorTests
         var subscriber2 = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var snapshots1 = new List<RoomPlayerUpdate>();
-        var snapshots2 = new List<RoomPlayerUpdate>();
+        var snapshots1 = new List<RoomSnapshot>();
+        var snapshots2 = new List<RoomSnapshot>();
 
         Task task1 = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (ReadOnlyMemory<byte> bytes in deps.RoomStore.SubscribeRoomAsync(
                                    subscriber1.PlayerId,
                                    createdRoom1.RoomId,
                                    cts.Token))
                 {
-                    snapshots1.Add(snapshot);
+                    snapshots1.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                     if (snapshots1.Count >= 2) break;
                 }
             }
@@ -79,12 +81,12 @@ public class RoomSubscriptionBehaviorTests
         {
             try
             {
-                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (ReadOnlyMemory<byte> bytes in deps.RoomStore.SubscribeRoomAsync(
                                    subscriber2.PlayerId,
                                    createdRoom2.RoomId,
                                    cts.Token))
                 {
-                    snapshots2.Add(snapshot);
+                    snapshots2.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                     if (snapshots2.Count >= 2) break;
                 }
             }
@@ -112,12 +114,12 @@ public class RoomSubscriptionBehaviorTests
         var lastSnapshot2 = snapshots2[^1];
 
         Assert.Equal(createdRoom1.RoomId, lastSnapshot1.RoomId);
-        Assert.Contains(player100.PlayerId, lastSnapshot1.Players.Select(p => p.PlayerId));
-        Assert.DoesNotContain(player200.PlayerId, lastSnapshot1.Players.Select(p => p.PlayerId));
+        Assert.Contains(player100.PlayerId, lastSnapshot1.Players.Select(p => p.Id));
+        Assert.DoesNotContain(player200.PlayerId, lastSnapshot1.Players.Select(p => p.Id));
 
         Assert.Equal(createdRoom2.RoomId, lastSnapshot2.RoomId);
-        Assert.Contains(player200.PlayerId, lastSnapshot2.Players.Select(p => p.PlayerId));
-        Assert.DoesNotContain(player100.PlayerId, lastSnapshot2.Players.Select(p => p.PlayerId));
+        Assert.Contains(player200.PlayerId, lastSnapshot2.Players.Select(p => p.Id));
+        Assert.DoesNotContain(player100.PlayerId, lastSnapshot2.Players.Select(p => p.Id));
     }
 
     [Fact]
@@ -131,18 +133,18 @@ public class RoomSubscriptionBehaviorTests
         var subscriber = await deps.PlayerStore.CreatePlayerAsync(new Location(0, 0), CancellationToken.None);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var snapshots = new List<RoomPlayerUpdate>();
+        var snapshots = new List<RoomSnapshot>();
 
         Task subscribeTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snapshot in deps.RoomStore.SubscribeRoomAsync(
+                await foreach (ReadOnlyMemory<byte> bytes in deps.RoomStore.SubscribeRoomAsync(
                                    subscriber.PlayerId,
                                    createdRoom.RoomId,
                                    cts.Token))
                 {
-                    snapshots.Add(snapshot);
+                    snapshots.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                     if (snapshots.Count >= 4) break;
                 }
             }
@@ -169,12 +171,12 @@ public class RoomSubscriptionBehaviorTests
         Assert.Single(snapshots[1].Players);
         Assert.Equal(2, snapshots[2].Players.Count);
         Assert.Equal(3, snapshots[3].Players.Count);
-        Assert.Equal(new[] { player10.PlayerId }, snapshots[1].Players.Select(p => p.PlayerId).ToArray());
+        Assert.Equal(new[] { player10.PlayerId }, snapshots[1].Players.Select(p => p.Id).ToArray());
         Assert.Equal(
             new[] { player10.PlayerId, player20.PlayerId },
-            snapshots[2].Players.Select(p => p.PlayerId).ToArray());
+            snapshots[2].Players.Select(p => p.Id).ToArray());
         Assert.Equal(
             new[] { player10.PlayerId, player20.PlayerId, player30.PlayerId },
-            snapshots[3].Players.Select(p => p.PlayerId).ToArray());
+            snapshots[3].Players.Select(p => p.Id).ToArray());
     }
 }

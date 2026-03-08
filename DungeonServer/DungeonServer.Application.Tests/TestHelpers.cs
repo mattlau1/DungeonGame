@@ -13,6 +13,7 @@ using DungeonServer.Infrastructure.InMemory.Player;
 using DungeonServer.Infrastructure.InMemory.Rooms;
 using DungeonServer.Infrastructure.Messaging.Rooms;
 using Microsoft.Extensions.DependencyInjection;
+using RoomSnapshot = DungeonGame.Core.RoomSnapshot;
 
 namespace DungeonServer.Application.Tests;
 
@@ -78,7 +79,7 @@ public static class TestHelpers
         var simulationQueue = new SimulationQueue();
         var architect = new DungeonArchitect(roomStore);
         var playerManager = new PlayerManager(architect, playerStore, roomStore, playerStateManager, simulationQueue);
-        var controller = new DungeonController(playerManager, roomStore, playerStore, playerInputManager, movementManager);
+        var controller = new DungeonController(playerManager, roomStore, playerStore, playerInputManager);
         return new ControllerDependencies(
             controller,
             roomStore,
@@ -137,5 +138,10 @@ public static class TestHelpers
         }
 
         return playerState;
+    }
+
+    public static RoomSnapshot DeserializeRoomSnapshot(ReadOnlyMemory<byte> data)
+    {
+        return RoomSnapshot.Parser.ParseFrom(data.ToArray());
     }
 }

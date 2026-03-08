@@ -1,7 +1,9 @@
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Shared;
+using DungeonServer.Application.Tests;
 using Xunit;
+using RoomSnapshot = DungeonGame.Core.RoomSnapshot;
 
 namespace DungeonServer.Application.Tests.Rooms;
 
@@ -19,7 +21,7 @@ public class RoomSubscriptionTests
         {
             try
             {
-                await foreach (RoomPlayerUpdate snapshot in deps.Controller.SubscribeRoomAsync(
+                await foreach (ReadOnlyMemory<byte> bytes in deps.Controller.SubscribeRoomAsync(
                                    player.Id,
                                    player.RoomId,
                                    cts.Token))
@@ -49,18 +51,18 @@ public class RoomSubscriptionTests
         int roomId = first.RoomId;
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var snapshots = new List<RoomPlayerUpdate>();
+        var snapshots = new List<RoomSnapshot>();
 
         Task enumerateTask = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                await foreach (ReadOnlyMemory<byte> bytes in deps.Controller.SubscribeRoomAsync(
                                    first.Id,
                                    roomId,
                                    cts.Token))
                 {
-                    snapshots.Add(snap);
+                    snapshots.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                     if (snapshots.Count >= 1) break;
                 }
             }
@@ -85,7 +87,7 @@ public class RoomSubscriptionTests
         {
             await enumerateTask;
                 bool foundCombined = snapshots.Any(s =>
-                    s.Players.Any(p => p.PlayerId == first.Id) && s.Players.Any(p => p.PlayerId == second.PlayerId));
+                    s.Players.Any(p => p.Id == first.Id) && s.Players.Any(p => p.Id == second.PlayerId));
             Assert.True(foundCombined, "Did not observe a snapshot including both players after the second joined");
         }
     }
@@ -99,7 +101,7 @@ public class RoomSubscriptionTests
         var emitted = false;
         try
         {
-            await foreach (RoomPlayerUpdate _ in deps.Controller.SubscribeRoomAsync(-1, -1, cts.Token))
+            await foreach (ReadOnlyMemory<byte> _ in deps.Controller.SubscribeRoomAsync(-1, -1, cts.Token))
             {
                 emitted = true;
                 break;
@@ -124,17 +126,17 @@ public class RoomSubscriptionTests
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
-        var snapshots1 = new List<RoomPlayerUpdate>();
+        var snapshots1 = new List<RoomSnapshot>();
         Task task1 = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                await foreach (ReadOnlyMemory<byte> bytes in deps.Controller.SubscribeRoomAsync(
                                    player1.Id,
                                    roomId,
                                    cts.Token))
                 {
-                    snapshots1.Add(snap);
+                    snapshots1.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                     if (snapshots1.Count >= 1) break;
                 }
             }
@@ -143,17 +145,17 @@ public class RoomSubscriptionTests
             }
         });
 
-        var snapshots2 = new List<RoomPlayerUpdate>();
+        var snapshots2 = new List<RoomSnapshot>();
         Task task2 = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                await foreach (ReadOnlyMemory<byte> bytes in deps.Controller.SubscribeRoomAsync(
                                    player2.Id,
                                    roomId,
                                    cts.Token))
                 {
-                    snapshots2.Add(snap);
+                    snapshots2.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                     if (snapshots2.Count >= 1) break;
                 }
             }
@@ -191,17 +193,17 @@ public class RoomSubscriptionTests
 
         using var cts = new CancellationTokenSource();
 
-        var snapshots = new List<RoomPlayerUpdate>();
+        var snapshots = new List<RoomSnapshot>();
         Task task = Task.Run(async () =>
         {
             try
             {
-                await foreach (RoomPlayerUpdate snap in deps.Controller.SubscribeRoomAsync(
+                await foreach (ReadOnlyMemory<byte> bytes in deps.Controller.SubscribeRoomAsync(
                                    player.Id,
                                    roomId,
                                    cts.Token))
                 {
-                    snapshots.Add(snap);
+                    snapshots.Add(TestHelpers.DeserializeRoomSnapshot(bytes));
                 }
             }
             catch (OperationCanceledException)
