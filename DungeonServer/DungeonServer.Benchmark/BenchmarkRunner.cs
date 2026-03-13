@@ -14,6 +14,7 @@ public class BenchmarkRunner
     private readonly List<BenchmarkResult> _results = new();
     private readonly CancellationToken _cancellationToken;
     private DungeonController.DungeonControllerClient? _client;
+    private GrpcChannel? _sharedChannel;
 
     public BenchmarkRunner(
         BenchmarkConfig config,
@@ -30,8 +31,8 @@ public class BenchmarkRunner
 
     public async Task RunAllScenariosAsync()
     {
-        var channel = GrpcChannel.ForAddress(_config.ServerUrl);
-        _client = new DungeonController.DungeonControllerClient(channel);
+        _sharedChannel = GrpcChannel.ForAddress(_config.ServerUrl);
+        _client = new DungeonController.DungeonControllerClient(_sharedChannel);
 
         try
         {
@@ -44,18 +45,26 @@ public class BenchmarkRunner
         }
         catch
         {
+            _sharedChannel.Dispose();
             throw new Exception("Could not connect to server");
         }
 
-        foreach (var scenario in _config.Scenarios)
+        try
         {
-            if (_cancellationToken.IsCancellationRequested) break;
-            await RunScenarioAsync(scenario);
+            foreach (var scenario in _config.Scenarios)
+            {
+                if (_cancellationToken.IsCancellationRequested) break;
+                await RunScenarioAsync(scenario);
+            }
+
+            _dashboard.UpdateCurrentTest("All Tests Complete", _results.Sum(r => r.PlayerCount), "Complete");
+
+            SaveResults();
         }
-
-        _dashboard.UpdateCurrentTest("All Tests Complete", _results.Sum(r => r.PlayerCount), "Complete");
-
-        SaveResults();
+        finally
+        {
+            _sharedChannel.Dispose();
+        }
     }
 
     private async Task RunScenarioAsync(TestScenario scenario)
@@ -126,6 +135,7 @@ public class BenchmarkRunner
         var random = new Random();
         int nextPlayerId = 0;
 
+        var spawnTasks = new List<Task>();
         for (int i = 0; i < playerCount; i++)
         {
             var lifetimeMs = scenario.EnableChurn 
@@ -140,11 +150,13 @@ public class BenchmarkRunner
                 scenario.EnableRoomTransitions,
                 scenario.MovementHz,
                 lifetimeMs,
-                spawnDelayMs);
+                spawnDelayMs,
+                _sharedChannel);
             _players.Add(player);
-            await player.ConnectAndSpawnAsync();
-            await Task.Delay(20, _cancellationToken);
+            
+            spawnTasks.Add(player.ConnectAndSpawnAsync());
         }
+        await Task.WhenAll(spawnTasks);
 
         foreach (var player in _players)
         {
@@ -188,7 +200,8 @@ public class BenchmarkRunner
                         scenario.EnableRoomTransitions,
                         scenario.MovementHz,
                         newLifetimeMs,
-                        0);
+                        0,
+                        _sharedChannel);
                     await newPlayer.ConnectAndSpawnAsync();
                     _players.Add(newPlayer);
                     _ = newPlayer.StartMovementLoopAsync();
@@ -206,8 +219,7 @@ public class BenchmarkRunner
 
         _players.Clear();
 
-        var channel = GrpcChannel.ForAddress(_config.ServerUrl);
-        var client = new DungeonController.DungeonControllerClient(channel);
+        var client = new DungeonController.DungeonControllerClient(_sharedChannel);
         await WaitForServerDrainAsync(client);
 
         var finalMetrics = _metrics.GetSnapshot();

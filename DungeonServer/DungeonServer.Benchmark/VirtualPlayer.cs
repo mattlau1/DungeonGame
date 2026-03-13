@@ -14,6 +14,7 @@ public class VirtualPlayer
     private readonly int _movementIntervalMs;
     private readonly int? _maxLifetimeMs;
     private readonly int? _spawnDelayMs;
+    private readonly GrpcChannel? _sharedChannel;
 
     private GrpcChannel? _channel;
     private DungeonController.DungeonControllerClient? _client;
@@ -41,6 +42,19 @@ public class VirtualPlayer
         int movementHz,
         int? maxLifetimeMs = null,
         int? spawnDelayMs = null)
+        : this(playerId, serverUrl, metrics, enableRoomTransitions, movementHz, maxLifetimeMs, spawnDelayMs, null)
+    {
+    }
+
+    public VirtualPlayer(
+        int playerId,
+        string serverUrl,
+        MetricsCollector metrics,
+        bool enableRoomTransitions,
+        int movementHz,
+        int? maxLifetimeMs,
+        int? spawnDelayMs,
+        GrpcChannel? sharedChannel)
     {
         _playerId = playerId;
         _serverUrl = serverUrl;
@@ -50,6 +64,7 @@ public class VirtualPlayer
         _maxLifetimeMs = maxLifetimeMs;
         _spawnDelayMs = spawnDelayMs;
         _random = new Random(playerId + Environment.TickCount);
+        _sharedChannel = sharedChannel;
     }
 
     public async Task ConnectAndSpawnAsync()
@@ -61,7 +76,8 @@ public class VirtualPlayer
 
         try
         {
-            _channel = GrpcChannel.ForAddress(_serverUrl);
+            // Use shared channel if provided, otherwise create new one
+            _channel = _sharedChannel ?? GrpcChannel.ForAddress(_serverUrl);
             _client = new DungeonController.DungeonControllerClient(_channel);
 
             var spawnStopwatch = Stopwatch.StartNew();
@@ -311,7 +327,11 @@ public class VirtualPlayer
             }
         }
 
-        _channel?.Dispose();
+        // Only dispose channel if it was created by this player (not shared)
+        if (_channel != null && _sharedChannel == null)
+        {
+            _channel.Dispose();
+        }
         IsConnected = false;
     }
 }
