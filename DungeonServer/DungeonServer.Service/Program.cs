@@ -56,6 +56,8 @@ builder.Services.AddSingleton<IMovementManager, MovementManager>();
 
 builder.Services.AddSingleton<IServiceMethodProvider<DungeonControllerService>, DungeonControllerMethodProvider>();
 
+ThreadPool.SetMinThreads(500, 500);
+
 WebApplication app = builder.Build();
 
 app.Services.GetRequiredService<ITickScheduler>().Start();
