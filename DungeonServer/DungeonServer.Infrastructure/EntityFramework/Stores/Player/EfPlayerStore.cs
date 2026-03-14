@@ -156,13 +156,13 @@ public class EfPlayerStore : IPlayerStore
     public async Task<int> GetActivePlayerCountAsync(CancellationToken ct)
     {
         await using DungeonDbContext context = await _contextFactory.CreateDbContextAsync(ct);
-        return await context.Players.CountAsync(player => player.IsOnline, ct);
+        return await context.Players.AsNoTracking().CountAsync(player => player.IsOnline, ct);
     }
 
     public async Task<PlayerSnapshot?> GetFirstActivePlayerAsync(CancellationToken ct)
     {
         await using DungeonDbContext context = await _contextFactory.CreateDbContextAsync(ct);
-        PlayerEntity? firstPlayer = await context.Players.FirstOrDefaultAsync((player) => player.IsOnline, ct);
+        PlayerEntity? firstPlayer = await context.Players.AsNoTracking().FirstOrDefaultAsync((player) => player.IsOnline, ct);
 
         if (firstPlayer == null)
         {
