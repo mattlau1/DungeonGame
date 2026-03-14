@@ -3,6 +3,7 @@ using DungeonServer.Application.Core.Player.Contracts;
 using DungeonServer.Application.Core.Player.Models;
 using DungeonServer.Application.Core.Player.Storage;
 using DungeonServer.Application.Core.Rooms.Contracts;
+using DungeonServer.Application.Core.Rooms.Models;
 using DungeonServer.Application.Core.Rooms.Storage;
 using DungeonServer.Application.Core.Shared;
 using DungeonServer.Application.Core.TickSystem.Simulation;
@@ -58,7 +59,7 @@ public class PlayerManager : IPlayerManager
     {
         PlayerSnapshot? occupant = await _playerStore.GetFirstActivePlayerAsync(ct);
 
-        if (occupant == null)
+        if (occupant == null || occupant.RoomId == RoomConstants.InvalidRoomId)
         {
             return null;
         }
