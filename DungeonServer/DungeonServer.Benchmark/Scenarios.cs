@@ -69,7 +69,7 @@ public static class BenchmarkScenarios
         {
             Name = "Fixed Player Counts",
             Description = "Tests fixed player counts to find capacity",
-            PlayerCounts = [100, 250, 500, 750, 1000],
+            PlayerCounts = [500, 1000, 1500, 2000],
             MovementHz = 60,
             EnableRoomTransitions = false
         }
