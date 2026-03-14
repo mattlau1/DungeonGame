@@ -101,19 +101,17 @@ public sealed class RedisRoomSubscriptionRegistry : IRoomSubscriptionRegistry
 
     private static void HandleRedisMessage(RoomChannel room, RedisValue value)
     {
-        var temp = (byte[])value!;
-        var stableBytes = new byte[temp.Length];
-        Array.Copy(temp, stableBytes, temp.Length);
-
         // Volatile read ensures visibility across CPU cores
         ImmutableList<ChannelWriter<ReadOnlyMemory<byte>>> subs = Volatile.Read(ref room.Subscriptions);
 
+        var data = (byte[])value!;
+        
         // Lock-free write - ensures visibility across threads
-        Volatile.Write(ref room.CurrentState, stableBytes);
+        Volatile.Write(ref room.CurrentState, data);
 
         foreach (ChannelWriter<ReadOnlyMemory<byte>> writer in subs)
         {
-            writer.TryWrite(stableBytes);
+            writer.TryWrite(data);
         }
     }
 
