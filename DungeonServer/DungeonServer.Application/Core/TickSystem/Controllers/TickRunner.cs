@@ -88,8 +88,17 @@ public class TickRunner : ITickScheduler
 
             if (_globalTickNumber % PersistenceInterval == 0)
             {
-                // Fire & forget
-                _ = Task.Run(() => _playerStateManager.SaveAllToDatabaseAsync(CancellationToken.None), ct);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _playerStateManager.SaveAllToDatabaseAsync(ct).ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        // Swallow exception to prevent unobserved task exceptions
+                    }
+                }, CancellationToken.None);
             }
 
             await Task.Delay(15, ct);
