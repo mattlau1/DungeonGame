@@ -24,6 +24,13 @@ using StackExchange.Redis;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// HTTP/2 flow control tuning for high-throughput streaming
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.Http2.InitialConnectionWindowSize = 1024 * 1024 * 2; // 2 MB
+    options.Limits.Http2.InitialStreamWindowSize = 1024 * 1024; // 1 MB
+});
+
 // TODO: Don't hard code configuration & add fallback options
 string? redisConfiguration = builder.Configuration.GetSection("Redis:Configuration").Value;
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConfiguration));
