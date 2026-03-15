@@ -29,6 +29,10 @@ builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.Http2.InitialConnectionWindowSize = 1024 * 1024 * 2; // 2 MB
     options.Limits.Http2.InitialStreamWindowSize = 1024 * 1024; // 1 MB
+    
+    // Keep-alive settings to prevent connection timeouts
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
 });
 
 // TODO: Don't hard code configuration & add fallback options
