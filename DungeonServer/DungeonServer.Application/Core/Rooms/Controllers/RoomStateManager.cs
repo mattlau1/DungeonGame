@@ -21,7 +21,7 @@ public class RoomStateManager
             return cached;
         }
 
-        RoomStateSnapshot? room = await _roomStore.GetRoomAsync(roomId, ct);
+        RoomStateSnapshot? room = await _roomStore.GetRoomDimensionsAsync(roomId, ct);
 
         if (room != null)
         {

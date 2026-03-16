@@ -135,6 +135,27 @@ public class EfRoomStore : IRoomStore
         return ToSnapshot(room);
     }
 
+    public async Task<RoomStateSnapshot?> GetRoomDimensionsAsync(int roomId, CancellationToken ct)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(ct);
+
+        RoomEntity? room = await context.Rooms.AsNoTracking()
+            .FirstOrDefaultAsync(r => r.Id == roomId, ct);
+
+        if (room == null)
+        {
+            return null;
+        }
+
+        return new RoomStateSnapshot(
+            room.Id,
+            room.Type,
+            room.Width,
+            room.Height,
+            [],
+            new Dictionary<Direction, int>());
+    }
+
     public async Task PublishRoomUpdateAsync(int roomId, CancellationToken ct)
     {
         await using var dbContext = await _contextFactory.CreateDbContextAsync(ct);

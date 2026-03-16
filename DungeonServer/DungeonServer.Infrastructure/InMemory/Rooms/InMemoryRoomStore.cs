@@ -151,6 +151,11 @@ public class InMemoryRoomStore : IRoomStore
         }
     }
 
+    public Task<RoomStateSnapshot?> GetRoomDimensionsAsync(int roomId, CancellationToken ct)
+    {
+        return GetRoomAsync(roomId, ct);
+    }
+
     /// <summary>
     /// Tell subscribers that an update has occurred within the given room.
     /// </summary>
