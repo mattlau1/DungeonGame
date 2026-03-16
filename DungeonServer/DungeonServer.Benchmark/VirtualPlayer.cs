@@ -33,7 +33,6 @@ public class VirtualPlayer
     public bool IsConnected { get; private set; }
     public DateTime CreatedAt => _createdAt;
     public int? MaxLifetimeMs => _maxLifetimeMs;
-    public GrpcChannel? Channel => _channel;
 
     public VirtualPlayer(
         int playerId,

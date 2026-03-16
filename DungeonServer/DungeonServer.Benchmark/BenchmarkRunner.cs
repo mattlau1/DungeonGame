@@ -135,9 +135,6 @@ public class BenchmarkRunner
         var random = new Random();
         int nextPlayerId = 0;
 
-        // Note: We create a new channel per player to simulate real-world behavior
-        // where each client has its own connection. This is slower to spawn but
-        // gives more realistic latency numbers.
         var spawnTasks = new List<Task>();
         for (int i = 0; i < playerCount; i++)
         {
@@ -146,8 +143,6 @@ public class BenchmarkRunner
                 : (int?)null;
             var spawnDelayMs = scenario.EnableChurn ? random.Next(scenario.SpawnDelaySpreadMs) : 0;
 
-            var channel = GrpcChannel.ForAddress(_config.ServerUrl);
-            
             var player = new VirtualPlayer(
                 nextPlayerId++,
                 _config.ServerUrl,
@@ -156,7 +151,7 @@ public class BenchmarkRunner
                 scenario.MovementHz,
                 lifetimeMs,
                 spawnDelayMs,
-                channel);
+                _sharedChannel);
             _players.Add(player);
             
             spawnTasks.Add(player.ConnectAndSpawnAsync());
@@ -197,8 +192,6 @@ public class BenchmarkRunner
                     await player.DisconnectAsync();
                     _players.Remove(player);
 
-                    // Each re-spawned player gets a new channel
-                    var newChannel = GrpcChannel.ForAddress(_config.ServerUrl);
                     var newLifetimeMs = random.Next(scenario.MinLifetimeMs, scenario.MaxLifetimeMs);
                     var newPlayer = new VirtualPlayer(
                         nextPlayerId++,
@@ -208,7 +201,7 @@ public class BenchmarkRunner
                         scenario.MovementHz,
                         newLifetimeMs,
                         0,
-                        newChannel);
+                        _sharedChannel);
                     await newPlayer.ConnectAndSpawnAsync();
                     _players.Add(newPlayer);
                     _ = newPlayer.StartMovementLoopAsync();
@@ -221,7 +214,6 @@ public class BenchmarkRunner
 
         foreach (var player in _players)
         {
-            player.Channel?.Dispose();
             await player.DisconnectAsync();
         }
 
