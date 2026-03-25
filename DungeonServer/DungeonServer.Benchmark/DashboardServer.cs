@@ -8,6 +8,7 @@ namespace DungeonServer.Benchmark;
 public class DashboardServer : IDisposable
 {
     private readonly int _port;
+    private readonly string _serverUrl;
     private WebServer? _server;
     private readonly List<MetricsSnapshot> _history = [];
     private readonly object _historyLock = new();
@@ -18,9 +19,10 @@ public class DashboardServer : IDisposable
     private CancellationTokenSource? _benchmarkCts;
     private bool _benchmarkComplete;
 
-    public DashboardServer(int port, string htmlPath)
+    public DashboardServer(int port, string serverUrl, string htmlPath)
     {
         _port = port;
+        _serverUrl = serverUrl;
         _htmlPath = htmlPath;
         Logger.NoLogging();
     }
@@ -211,7 +213,7 @@ public class DashboardServer : IDisposable
         {
             return new BenchmarkConfig
             {
-                ServerUrl = "http://localhost:5142",
+                ServerUrl = _serverUrl,
                 WarmupSeconds = 0,
                 TestDurationSeconds = 60,
                 DashboardPort = _port,
@@ -223,7 +225,7 @@ public class DashboardServer : IDisposable
         {
             return new BenchmarkConfig
             {
-                ServerUrl = "http://localhost:5142",
+                ServerUrl = _serverUrl,
                 WarmupSeconds = 1,
                 TestDurationSeconds = 10,
                 DashboardPort = _port,
@@ -233,7 +235,7 @@ public class DashboardServer : IDisposable
 
         return new BenchmarkConfig
         {
-            ServerUrl = "http://localhost:5142",
+            ServerUrl = _serverUrl,
             WarmupSeconds = 3,
             TestDurationSeconds = 30,
             DashboardPort = _port,

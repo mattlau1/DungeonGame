@@ -2,11 +2,22 @@ namespace DungeonServer.Benchmark;
 
 public class BenchmarkConfig
 {
-    public string ServerUrl { get; set; } = "http://localhost:5142";
+    public string ServerUrl { get; set; } = GetEnvOrDefault("BENCHMARK_SERVER_URL", "http://localhost:5142");
     public int WarmupSeconds { get; set; } = 10;
     public int TestDurationSeconds { get; set; } = 60;
-    public int DashboardPort { get; set; } = 8080;
+    public int DashboardPort { get; set; } = GetEnvOrDefaultInt("BENCHMARK_DASHBOARD_PORT", 9092);
     public List<TestScenario> Scenarios { get; set; } = new();
+
+    private static string GetEnvOrDefault(string name, string defaultValue)
+    {
+        return Environment.GetEnvironmentVariable(name) ?? defaultValue;
+    }
+
+    private static int GetEnvOrDefaultInt(string name, int defaultValue)
+    {
+        var value = Environment.GetEnvironmentVariable(name);
+        return int.TryParse(value, out var result) ? result : defaultValue;
+    }
 }
 
 public class TestScenario

@@ -16,6 +16,20 @@ services:
       redis:
         condition: service_healthy
 
+  benchmark-runner:
+    image: dungeongame-benchmark-runner:latest
+    build:
+      context: .
+      dockerfile: DungeonServer/DungeonServer.Benchmark/Dockerfile
+    ports:
+      - "9092:9092"
+    environment:
+      - BENCHMARK_SERVER_URL=http://dungeon-server:8080
+      - BENCHMARK_DASHBOARD_PORT=9092
+    depends_on:
+      dungeon-server:
+        condition: service_started
+
   postgres:
     image: postgres:16
     restart: always
