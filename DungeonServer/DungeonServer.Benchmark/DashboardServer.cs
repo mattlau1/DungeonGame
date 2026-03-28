@@ -29,7 +29,7 @@ public class DashboardServer : IDisposable
 
     public void Start()
     {
-        _server = new WebServer(o => o.WithUrlPrefix($"http://localhost:{_port}").WithMode(HttpListenerMode.EmbedIO));
+        _server = new WebServer(o => o.WithUrlPrefix($"http://+:{_port}").WithMode(HttpListenerMode.EmbedIO));
 
         _server.WithModule(
             new ActionModule(
