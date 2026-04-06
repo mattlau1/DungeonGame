@@ -1,0 +1,11 @@
+.vs
+.idea
+.git
+DungeonClient
+benchmark_results
+terraform
+**/bin
+**/obj
+**/README.md
+**/*.user
+**/*.DotSettings

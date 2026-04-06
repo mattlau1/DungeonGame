@@ -2,14 +2,19 @@ services:
   dungeon-server:
     build:
       context: .
-      dockerfile: DungeonServer/Dockerfile
+      dockerfile: Dockerfile.server
     ports:
       - "5142:8080"
       - "5143:8081"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DbConnection=Host=postgres;Port=5432;Database=dungeon_db;Username=dungeon_user;Password=dungeon_password
-      - Redis__Configuration=redis:6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=dungeon_db
+      - DB_USER=dungeon_user
+      - DB_PASSWORD=dungeon_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
       postgres:
         condition: service_healthy
@@ -17,10 +22,9 @@ services:
         condition: service_healthy
 
   benchmark-runner:
-    image: dungeongame-benchmark-runner:latest
     build:
       context: .
-      dockerfile: DungeonServer/DungeonServer.Benchmark/Dockerfile
+      dockerfile: Dockerfile.benchmark
     ports:
       - "9092:9092"
     environment:
