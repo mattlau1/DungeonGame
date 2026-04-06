@@ -35,11 +35,22 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
 });
 
-// TODO: Don't hard code configuration & add fallback options
-string? redisConfiguration = builder.Configuration.GetSection("Redis:Configuration").Value;
-builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConfiguration));
+// Redis configuration - build from env vars
+string? redisHost = builder.Configuration["REDIS_HOST"] ?? "localhost";
+string? redisPort = builder.Configuration["REDIS_PORT"] ?? "6379";
+string? redisPassword = builder.Configuration["REDIS_PASSWORD"];
+string redisConfig = !string.IsNullOrEmpty(redisPassword) 
+    ? $"{redisHost}:{redisPort},password={redisPassword}"
+    : $"{redisHost}:{redisPort}";
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConfig));
 
-string? connectionString = builder.Configuration.GetConnectionString("DbConnection");
+// Database connection - build from individual env vars for security
+string? dbHost = builder.Configuration["DB_HOST"] ?? "localhost";
+string? dbPort = builder.Configuration["DB_PORT"] ?? "5432";
+string? dbName = builder.Configuration["DB_NAME"] ?? "dungeon_db";
+string? dbUser = builder.Configuration["DB_USER"] ?? "dungeon_user";
+string? dbPassword = builder.Configuration["DB_PASSWORD"] ?? "";
+string connectionString = $"Host={dbHost};Port={dbPort};Database={dbName};Username={dbUser};Password={dbPassword}";
 builder.Services.AddDbContextFactory<DungeonDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddGrpc();
