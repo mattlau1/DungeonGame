@@ -82,6 +82,12 @@ ThreadPool.SetMinThreads(500, 500);
 
 WebApplication app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<DungeonDbContext>();
+    dbContext.Database.Migrate();
+}
+
 app.Services.GetRequiredService<ITickScheduler>().Start();
 
 app.MapGrpcService<DungeonControllerService>();
