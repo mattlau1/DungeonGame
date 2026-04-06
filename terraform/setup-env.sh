@@ -1,5 +1,4 @@
 #!/bin/bash
-set -euo pipefail
 
 export TF_VAR_project_id="${TF_VAR_project_id:-dungeon-game-prod}"
 export TF_VAR_region="${TF_VAR_region:-us-east1}"
