@@ -1,0 +1,25 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# Credentials
+*.json
+!example-credentials.json
+
+# Specific sensitive files
+terraform-key.json
+credentials.json
+*.pem
+*.key
+
+# Local data
+.terraform/
+
+# Generated files containing secrets
+deployment-generated.yaml
+*.decrypted
+*.secrets
+*.env.local
+.envrc

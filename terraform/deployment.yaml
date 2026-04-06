@@ -1,0 +1,325 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dungeon-secrets
+type: Opaque
+# Secrets synced from Secret Manager via kubectl (required before first deployment):
+#   kubectl create secret generic dungeon-secrets \
+#     --from-literal=db-password=$(gcloud secrets versions access latest --secret=dungeon-db-password) \
+#     --from-literal=redis-password=$(gcloud secrets versions access latest --secret=dungeon-redis-auth)
+#
+# ConfigMaps must also be created manually with IPs from Terraform outputs:
+#   kubectl create configmap dungeon-redis-config \
+#     --from-literal=host=$(terraform output -raw redis_host) \
+#     --from-literal=port=6379
+#   kubectl create configmap dungeon-db-config \
+#     --from-literal=host=$(terraform output -raw postgres_private_ip)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dungeon-server-grpc
+  annotations:
+    # Use NEG for Cloud Armor integration
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "dungeon-server-backendconfig"}'
+spec:
+  type: ClusterIP
+  selector:
+    app: dungeon-server
+  ports:
+  - name: grpc
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+---
+# BackendConfig for Cloud Armor DDoS protection and security policy
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: dungeon-server-backendconfig
+spec:
+  securityPolicy:
+    name: dungeon-game-security-policy  # Cloud Armor security policy
+  timeoutSec: 60
+  connectionDraining:
+    drainingTimeoutSec: 30
+---
+# Ingress with Cloud Armor for secure external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dungeon-server-ingress
+  annotations:
+    # Use GCE load balancer (regional, supports Cloud Armor)
+    kubernetes.io/ingress.class: "gce"
+    # Enable Cloud Armor security policy
+    cloud.google.com/backend-config: '{"default": "dungeon-server-backendconfig"}'
+    # Global static IP (optional - reserve first: gcloud compute addresses create dungeon-ip --global)
+    # kubernetes.io/ingress.global-static-ip-name: "dungeon-ip"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: dungeon-server-grpc
+            port:
+              number: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dungeon-server
+spec:
+  type: ClusterIP
+  selector:
+    app: dungeon-server
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dungeon-benchmark
+spec:
+  type: ClusterIP
+  selector:
+    app: dungeon-benchmark
+  ports:
+  - name: dashboard
+    port: 9092
+    targetPort: 9092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dungeon-server
+spec:
+  replicas: 3  # Minimum 3 replicas for high availability
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Ensure no downtime during rolling updates
+  selector:
+    matchLabels:
+      app: dungeon-server
+  template:
+    metadata:
+      labels:
+        app: dungeon-server
+      annotations:
+        gke.io/workload-identity: "dungeon-gke-workload"
+    spec:
+      serviceAccountName: dungeon-gke-workload
+      containers:
+      - name: dungeon-server
+        # IMPORTANT: Use immutable digest or semantic version tag, never "latest"
+        # To get image digest: gcloud container images describe gcr.io/dungeon-game-prod/dungeon-server:latest --format='get(image_summary.digest)'
+        # Then pin: gcr.io/dungeon-game-prod/dungeon-server@sha256:... or gcr.io/dungeon-game-prod/dungeon-server:v1.0.0
+        image: gcr.io/dungeon-game-prod/dungeon-server:v1.0.0  # TODO: Replace with actual build version or digest
+        imagePullPolicy: IfNotPresent  # Sufficient with pinned version tags, faster restarts
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
+        # gRPC health probes (requires Kubernetes 1.24+ and gRPC health protocol in app)
+        # If your app doesn't support gRPC health protocol, use exec probe with grpcurl
+        livenessProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        startupProbe:
+          grpc:
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12
+        env:
+        - name: ASPNETCORE_URLS
+          value: "http://+:8080"
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: dungeon-db-config
+              key: host
+              optional: false
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "dungeon_db"
+        - name: DB_USER
+          value: "dungeon_user"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dungeon-secrets
+              key: db-password
+              optional: false
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: dungeon-redis-config
+              key: host
+              optional: false
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dungeon-secrets
+              key: redis-password
+              optional: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dungeon-benchmark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dungeon-benchmark
+  template:
+    metadata:
+      labels:
+        app: dungeon-benchmark
+      annotations:
+        gke.io/workload-identity: "dungeon-gke-workload"
+    spec:
+      serviceAccountName: dungeon-gke-workload
+      containers:
+      - name: benchmark
+        # IMPORTANT: Use immutable digest or semantic version tag, never "latest"
+        image: gcr.io/dungeon-game-prod/dungeon-benchmark:v1.0.0  # TODO: Replace with actual build version or digest
+        imagePullPolicy: IfNotPresent  # Sufficient with pinned version tags, faster restarts
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
+        env:
+        - name: BENCHMARK_SERVER_URL
+          value: "http://dungeon-server-grpc:443"
+        - name: BENCHMARK_DASHBOARD_PORT
+          value: "9092"
+        ports:
+        - containerPort: 9092
+---
+# Network Policy to restrict pod-to-pod communication
+# This limits blast radius if one pod is compromised
+# 
+# IMPORTANT: This policy restricts ingress to only allow traffic from the
+# GKE Ingress controller (in gke-managed-system namespace). 
+# If using a different ingress controller, update the namespaceSelector below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dungeon-server-network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: dungeon-server
+  policyTypes:
+  - Ingress
+  - Egress
+  # Ingress: Only accept traffic from GKE Ingress controller
+  # The empty from list without namespaceSelector/podSelector would allow ALL sources
+  # We explicitly select the GKE ingress controller namespace
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: gke-managed-system  # GKE Ingress controller namespace
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Egress: Only allow outbound to specific services
+  egress:
+  # Allow DNS resolution (required for all outbound connections)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53  # DNS
+  # Allow outbound to Redis (via private IP in VPC)
+  - to: []  # Empty selector = all destinations, restricted by port
+    ports:
+    - protocol: TCP
+      port: 6379  # Redis
+  # Allow outbound to PostgreSQL (via private IP in VPC)
+  - to: []  # Empty selector = all destinations, restricted by port
+    ports:
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53  # DNS
+---
+# Pod Disruption Budget for high availability during node maintenance
+# With 3 replicas, minAvailable: 2 ensures at most 1 pod can be disrupted at a time
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dungeon-server-pdb
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dungeon-server
