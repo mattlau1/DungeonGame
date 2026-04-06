@@ -31,7 +31,20 @@ public class BenchmarkRunner
 
     public async Task RunAllScenariosAsync()
     {
-        _sharedChannel = GrpcChannel.ForAddress(_config.ServerUrl);
+        var serverUrl = _config.ServerUrl;
+        var isHttp = serverUrl.StartsWith("http://");
+        
+        GrpcChannelOptions? channelOptions = null;
+        
+        if (!isHttp)
+        {
+            var httpHandler = new System.Net.Http.HttpClientHandler();
+            httpHandler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
+            var httpClient = new System.Net.Http.HttpClient(httpHandler);
+            channelOptions = new GrpcChannelOptions { HttpClient = httpClient };
+        }
+        
+        _sharedChannel = GrpcChannel.ForAddress(serverUrl, channelOptions ?? new GrpcChannelOptions());
         _client = new DungeonController.DungeonControllerClient(_sharedChannel);
 
         try
