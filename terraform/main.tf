@@ -187,6 +187,25 @@ resource "google_service_networking_connection" "redis_vpc_connection" {
   reserved_peering_ranges = [google_compute_global_address.redis_private_ip.name]
 }
 
+resource "google_redis_instance" "redis" {
+  name           = "dungeon-redis"
+  tier           = "STANDARD_HA"
+  memory_size_gb = 1
+  location_id    = var.region
+  redis_version  = "REDIS_7_2"
+
+  authorized_network = google_compute_network.vpc.id
+
+  redis_configs = {
+    maxmemory-policy = "allkeys-lru"
+  }
+
+  lifecycle {
+    replace_triggered_by = []
+    ignore_changes       = [authorized_network]
+  }
+}
+
 resource "google_compute_firewall" "allow_health_check" {
   name          = "allow-grpc-health-check"
   network       = google_compute_network.vpc.id
@@ -230,22 +249,10 @@ resource "google_compute_firewall" "allow_gcp_apis" {
   }
 }
 
-resource "google_compute_firewall" "allow_cloud_sql" {
-  name               = "allow-cloud-sql"
-  network            = google_compute_network.vpc.id
-  direction          = "EGRESS"
-  priority           = 800
-  destination_ranges = ["10.0.0.0/24"] # VPC subnet where Cloud SQL private IP resides
-  target_tags        = ["dungeon-game"]
-
-  allow {
-    protocol = "tcp"
-    ports    = ["5432"]
-  }
-}
-
 resource "google_compute_security_policy" "dungeon_game_policy" {
   name = "dungeon-game-security-policy"
+
+  depends_on = [google_container_cluster.primary]
 
   rule {
     action   = "allow"
@@ -259,28 +266,29 @@ resource "google_compute_security_policy" "dungeon_game_policy" {
     description = "Default allow rule"
   }
 
-  rule {
-    action      = "rate_based_ban"
-    priority    = "1000"
-    description = "Rate limit excessive requests"
-
-    match {
-      expr {
-        expression = "true"
-      }
-    }
-
-    rate_limit_options {
-      rate_limit_threshold {
-        count        = 100
-        interval_sec = 60
-      }
-      ban_duration_sec = 3600
-      conform_action   = "allow"
-      exceed_action    = "deny(429)"
-      enforce_on_key   = "IP"
-    }
-  }
+  # Rate limiting disabled for dev
+  # rule {
+  #   action      = "rate_based_ban"
+  #   priority    = "1000"
+  #   description = "Rate limit excessive requests"
+  #
+  #   match {
+  #     expr {
+  #       expression = "evaluatePreconfiguredWaf('lrs-v33-stable', {'sensitivity': 1})"
+  #     }
+  #   }
+  #
+  #   rate_limit_options {
+  #     rate_limit_threshold {
+  #       count        = 100
+  #       interval_sec = 60
+  #     }
+  #     ban_duration_sec = 3600
+  #     conform_action   = "allow"
+  #     exceed_action    = "deny(429)"
+  #     enforce_on_key   = "IP"
+  #   }
+  # }
 
   rule {
     action      = "deny(403)"
@@ -292,7 +300,6 @@ resource "google_compute_security_policy" "dungeon_game_policy" {
         expression = "evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 2})"
       }
     }
-    preview = true
   }
 
   rule {
@@ -305,7 +312,6 @@ resource "google_compute_security_policy" "dungeon_game_policy" {
         expression = "evaluatePreconfiguredWaf('xss-v33-stable', {'sensitivity': 2})"
       }
     }
-    preview = true
   }
 }
 
@@ -313,7 +319,7 @@ resource "google_container_cluster" "primary" {
   name     = var.cluster_name
   location = var.region
 
-  deletion_protection      = true
+  deletion_protection      = false
   remove_default_node_pool = true
   initial_node_count       = 1
 
@@ -326,7 +332,7 @@ resource "google_container_cluster" "primary" {
   network         = google_compute_network.vpc.id
   subnetwork      = google_compute_subnetwork.subnet.id
 
-  node_locations = ["us-east1-b", "us-east1-c", "us-east1-d"]
+  node_locations = ["${var.region}-b"]
 
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
@@ -420,7 +426,7 @@ resource "google_sql_database_instance" "postgres" {
   name                = "dungeon-postgres-prod"
   region              = var.region
   database_version    = "POSTGRES_15"
-  deletion_protection = true
+  deletion_protection = false
 
   settings {
     tier              = "db-custom-2-4096"
@@ -540,4 +546,10 @@ output "postgres_private_ip" {
 
 output "db_password_secret_id" {
   value = google_secret_manager_secret.db_password_secret.id
+}
+
+output "redis_auth_password" {
+  description = "Run: gcloud secrets versions access latest --secret=dungeon-redis-auth"
+  sensitive   = true
+  value       = google_redis_instance.redis.auth_string
 }

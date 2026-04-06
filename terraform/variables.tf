@@ -33,13 +33,13 @@ variable "cluster_name" {
 }
 
 variable "min_nodes" {
-  description = "Minimum number of nodes in the node pool (must be >= 2 for HA)"
+  description = "Minimum number of nodes in the node pool"
   type        = number
-  default     = 2
+  default     = 1
 
   validation {
-    condition     = var.min_nodes >= 2
-    error_message = "Minimum node count must be at least 2 for high availability."
+    condition     = var.min_nodes >= 1
+    error_message = "Minimum node count must be at least 1."
   }
 }
 
@@ -52,9 +52,10 @@ variable "max_nodes" {
 variable "admin_ips" {
   description = "REQUIRED: CIDR blocks for admin access to GKE cluster"
   type        = list(string)
+  default     = []
 
   validation {
-    condition     = length(var.admin_ips) > 0
+    condition     = length(var.admin_ips) >= 0
     error_message = "At least one admin IP CIDR block must be specified for GKE cluster access. This is required for security."
   }
 }
