@@ -24,7 +24,7 @@ public class PlayerSimulation : ISimulation
         _movementManager = movementManager;
     }
 
-    public async Task SimulateAsync(RoomStateSnapshot room, CancellationToken ct)
+    public async Task<List<PlayerState>> SimulateAsync(RoomStateSnapshot room, CancellationToken ct)
     {
         List<PlayerState> players = _playerStateManager.GetPlayersInRoom(room.RoomId);
 
@@ -37,5 +37,7 @@ public class PlayerSimulation : ISimulation
                 player.LastProcessedSequence = cmds[^1].Sequence;
             }
         }
+
+        return players;
     }
 }

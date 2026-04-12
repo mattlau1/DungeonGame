@@ -64,13 +64,19 @@ public class TickRunner : ITickScheduler
 
                 _roomTickNumbers.AddOrUpdate(roomId, 1, (_, old) => old + 1);
 
+                List<PlayerState>? players = null;
+
                 foreach (var simType in _simulationQueue.GetSimulationTypesForRoom(roomId))
                 {
                     var simulation = _simulations[simType];
-                    await simulation.SimulateAsync(room, ct);
+                    players = await simulation.SimulateAsync(room, ct);
                 }
 
-                List<PlayerState> players = _playerStateManager.GetPlayersInRoom(roomId);
+                if (players == null)
+                {
+                    continue;
+                }
+
                 List<PlayerSnapshot> playerUpdates = players.Select(p => new PlayerSnapshot(
                         p.PlayerId,
                         p.RoomId,
