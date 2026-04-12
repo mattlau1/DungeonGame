@@ -46,7 +46,10 @@ public class TickRunner : ITickScheduler
         _ = TickLoop(_cts.Token);
     }
 
-    public void Stop() => _cts?.Cancel();
+    public void Stop()
+    {
+        _cts?.Cancel();
+    }
 
     private async Task TickLoop(CancellationToken ct)
     {
