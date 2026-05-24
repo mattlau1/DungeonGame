@@ -26,3 +26,11 @@ DungeonServer/DungeonServer.Infrastructure/obj/
 
 DungeonServer/DungeonServer.Contracts/bin/
 DungeonServer/DungeonServer.Contracts/obj/
+DungeonPygameClient/venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Generated proto files
+DungeonPygameClient/proto/
